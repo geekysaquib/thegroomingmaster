@@ -32,6 +32,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => { tokenStore.clear(); setUser(null); }, []);
+  /** Merge fresh profile fields (e.g. after editing name / picture) into the signed-in user. */
+  const updateUser = useCallback((patch) => setUser((u) => (u ? { ...u, ...patch } : u)), []);
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>{children}</AuthContext.Provider>;
 }

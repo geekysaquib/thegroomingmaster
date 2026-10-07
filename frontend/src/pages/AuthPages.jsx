@@ -30,13 +30,13 @@ function LoginForm({ audience }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  if (user) return <Navigate to={user.role === "customer" ? "/app/book" : "/staff/calendar"} replace />;
+  if (user) return <Navigate to={user.role === "customer" ? "/app/book" : "/salon/calendar"} replace />;
 
   const submit = async (e) => {
     e.preventDefault(); setError(""); setBusy(true);
     try {
       const u = await login(form.email, form.password, audience);
-      navigate(u.role === "customer" ? "/app/book" : u.role === "admin" ? "/staff/dashboard" : "/staff/calendar");
+      navigate(u.role === "customer" ? "/app/book" : u.role === "admin" ? "/salon/dashboard" : "/salon/calendar");
     } catch (err) { setError(errMsg(err)); } finally { setBusy(false); }
   };
 
@@ -52,13 +52,13 @@ function LoginForm({ audience }) {
 
 export const CustomerLogin = () => (
   <AuthCard title="Welcome back" subtitle="Sign in to book and manage your appointments."
-    footer={<>New here? <Link to="/register" className="font-medium text-link underline-offset-2 hover:underline">Create an account</Link> · <Link to="/staff-login" className="hover:underline">Staff login</Link></>}>
+    footer={<>New here? <Link to="/register" className="font-medium text-link underline-offset-2 hover:underline">Create an account</Link> · <Link to="/salon-login" className="hover:underline">Salon login</Link></>}>
     <LoginForm audience="customer" />
   </AuthCard>
 );
 
 export const StaffLogin = () => (
-  <AuthCard title="Staff portal" subtitle="Salon admin and staff sign in here."
+  <AuthCard title="Salon login" subtitle="Salon admin and staff sign in here."
     footer={<Link to="/login" className="font-medium text-link underline-offset-2 hover:underline">Customer login</Link>}>
     <LoginForm audience="staff" />
   </AuthCard>

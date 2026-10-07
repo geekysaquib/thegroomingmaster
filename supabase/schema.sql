@@ -10,6 +10,7 @@ create table users (
   email         text unique,
   phone         text,
   gender        text check (gender in ('male', 'female', 'other')),
+  avatar        text,                       -- base64 data URL, max 2 MB (enforced by the API)
   password_hash text,                       -- null for walk-in customers added by staff
   role          text not null default 'customer' check (role in ('customer', 'staff', 'admin')),
   base_salary   numeric(10,2) default 0,    -- staff/admin only
@@ -39,7 +40,7 @@ create table bookings (
   service_id  uuid not null references services(id),
   start_at    timestamptz not null,
   end_at      timestamptz not null,
-  status      text not null default 'booked' check (status in ('booked', 'completed', 'cancelled', 'no_show')),
+  status      text not null default 'booked' check (status in ('pending', 'booked', 'completed', 'cancelled', 'no_show')),
   notes       text,
   created_by  uuid references users(id),
   created_at  timestamptz not null default now()

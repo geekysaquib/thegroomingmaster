@@ -29,7 +29,7 @@ export default function NewBooking() {
     e.preventDefault(); setError(""); setBusy(true);
     try {
       await api.post("/bookings", { customer_id: form.customer_id, service_id: form.service_id, staff_id: form.staff_id || null, start_at: new Date(form.start).toISOString(), notes: form.notes });
-      navigate("/staff/calendar");
+      navigate("/salon/calendar");
     } catch (err) { setError(errMsg(err)); setBusy(false); }
   };
 

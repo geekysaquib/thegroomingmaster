@@ -22,13 +22,13 @@ export default function MyBookings() {
       <PageTitle title="My bookings" actions={<Link to="/app/book"><Button>New booking</Button></Link>} />
       <ErrorNote>{error}</ErrorNote>
       <Panel bodyClassName="">
-        <DataTable rows={rows} empty="No bookings yet - book your first appointment!" columns={[
+        <DataTable rows={rows} empty="Book your first appointment to see it here." columns={[
           { key: "service", header: "Service", render: (b) => b.service.name },
           { key: "when", header: "When", render: (b) => fmtDateTime(b.start_at) },
           { key: "price", header: "Price", render: (b) => money(b.service.price) },
-          { key: "status", header: "Status", render: (b) => <Badge tone={statusTone[b.status]}>{b.status.replace("_", " ")}</Badge> },
+          { key: "status", header: "Status", render: (b) => <Badge tone={statusTone[b.status]}>{b.status === "pending" ? "Awaiting confirmation" : b.status === "booked" ? "confirmed" : b.status.replace("_", " ")}</Badge> },
           { key: "act", header: "", className: "text-right", render: (b) =>
-            b.status === "booked" && new Date(b.start_at) > new Date() ? <Button size="sm" variant="secondary" onClick={() => cancel(b)}>Cancel</Button> : null },
+            (b.status === "booked" || b.status === "pending") && new Date(b.start_at) > new Date() ? <Button size="sm" variant="secondary" onClick={() => cancel(b)}>Cancel</Button> : null },
         ]} />
       </Panel>
     </>

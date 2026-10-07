@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, XCircle, Clock3, Info } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Inbox, X, XCircle, Clock3, Info } from "lucide-react";
 
 // Primitives styled after the monoZHub console (Panel, MetricCard, TanStack-style table, status badges).
 
@@ -51,6 +51,8 @@ const btn = {
   secondary: "border border-border bg-surface-1 text-ink-primary hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
   ghost: "text-ink-secondary hover:bg-surface-3",
+  gold: "bg-[#c9b182] text-[#1a1a1a] hover:bg-[#d8c498]",
+  glass: "border border-white/25 bg-white/10 text-white hover:bg-white/20",
 };
 
 export function Button({ variant = "primary", size = "md", className = "", ...props }) {
@@ -115,7 +117,7 @@ export function Modal({ title, onClose, children, wide }) {
 const PAGE_SIZES = [10, 25, 50, 100];
 
 /** Table with monoZHub's compact uppercase header and "Show N  « ‹ 1 / 3 › »" footer. */
-export function DataTable({ columns, rows, empty = "Nothing here yet.", onRowClick, pageSize: initialSize = 50 }) {
+export function DataTable({ columns, rows, empty, onRowClick, pageSize: initialSize = 50 }) {
   const [size, setSize] = useState(initialSize);
   const [page, setPage] = useState(1);
   const pages = Math.max(1, Math.ceil(rows.length / size));
@@ -134,7 +136,7 @@ export function DataTable({ columns, rows, empty = "Nothing here yet.", onRowCli
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={columns.length} className="px-4 py-10 text-center text-ink-muted">{empty}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={columns.length}><EmptyState hint={empty} /></td></tr>}
             {visible.map((r, i) => (
               <tr key={r.id ?? i} onClick={onRowClick ? () => onRowClick(r) : undefined}
                 className={`h-11 border-b border-border last:border-0 ${onRowClick ? "cursor-pointer hover:bg-surface-2" : ""}`}>
@@ -167,3 +169,16 @@ export function DataTable({ columns, rows, empty = "Nothing here yet.", onRowCli
 
 export const Spinner = () => <div className="p-8 text-center text-sm text-ink-muted">Loading…</div>;
 export const ErrorNote = ({ children }) => children ? <div role="alert" className="mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{children}</div> : null;
+
+/** Shown wherever a table, chart or list has nothing to display. */
+export function EmptyState({ title = "No data", hint, className = "" }) {
+  return (
+    <div role="status" className={`flex flex-col items-center justify-center gap-1.5 px-4 py-10 text-center ${className}`}>
+      <Inbox size={28} className="text-ink-muted/60" aria-hidden="true" />
+      <div className="text-sm font-medium text-ink-secondary">{title}</div>
+      {hint && <div className="text-xs text-ink-muted">{hint}</div>}
+    </div>
+  );
+}
+
+export const Skeleton = ({ className = "" }) => <div aria-hidden="true" className={`animate-pulse rounded-md bg-surface-3 ${className}`} />;

@@ -19,7 +19,8 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
-app.use(express.json());
+// 3 MB: a 2 MB profile picture grows by ~33% once base64-encoded.
+app.use(express.json({ limit: "3mb" }));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", auth);

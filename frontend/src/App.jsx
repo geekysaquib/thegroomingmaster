@@ -20,9 +20,9 @@ import Team from "./pages/staff/Team";
 function Guard({ allow, children }) {
   const { user, loading } = useAuth();
   if (loading) return <Spinner />;
-  if (!user) return <Navigate to={allow === "customer" ? "/login" : "/staff-login"} replace />;
+  if (!user) return <Navigate to={allow === "customer" ? "/login" : "/salon-login"} replace />;
   const ok = allow === "customer" ? user.role === "customer" : allow === "admin" ? user.role === "admin" : isStaffRole(user.role);
-  if (!ok) return <Navigate to={user.role === "customer" ? "/app/book" : "/staff/calendar"} replace />;
+  if (!ok) return <Navigate to={user.role === "customer" ? "/app/book" : "/salon/calendar"} replace />;
   return children;
 }
 
@@ -35,7 +35,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<CustomerLogin />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/staff-login" element={<StaffLogin />} />
+          <Route path="/salon-login" element={<StaffLogin />} />
 
           <Route path="/app" element={<Guard allow="customer"><Shell /></Guard>}>
             <Route index element={<Navigate to="book" replace />} />
@@ -43,7 +43,7 @@ export default function App() {
             <Route path="bookings" element={<MyBookings />} />
           </Route>
 
-          <Route path="/staff" element={<Guard allow="staff"><Shell /></Guard>}>
+          <Route path="/salon" element={<Guard allow="staff"><Shell /></Guard>}>
             <Route index element={<Navigate to="calendar" replace />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="new-booking" element={<NewBooking />} />

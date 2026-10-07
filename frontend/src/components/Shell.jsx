@@ -4,6 +4,8 @@ import { BarChart3, CalendarDays, CalendarPlus, ChevronsLeft, ChevronsRight, Lis
 import { useAuth } from "../lib/auth";
 import { useThemeMode } from "../lib/theme";
 import Logo from "./Logo";
+import Avatar from "./Avatar";
+import ProfileMenu from "./ProfileMenu";
 
 // Layout mirrors monoZHub's console: a slim icon rail of modules, a white sidebar listing the active
 // module's pages, and a top bar with the page title + breadcrumb and a slot for the page's actions.
@@ -17,25 +19,25 @@ const NAV = {
   ],
   staff: [
     { id: "salon", label: "Salon", icon: CalendarDays, items: [
-      { to: "/staff/calendar", label: "Booking Calendar", icon: CalendarDays },
-      { to: "/staff/new-booking", label: "New Booking", icon: CalendarPlus },
-      { to: "/staff/customers", label: "Customers", icon: Users },
+      { to: "/salon/calendar", label: "Booking Calendar", icon: CalendarDays },
+      { to: "/salon/new-booking", label: "New Booking", icon: CalendarPlus },
+      { to: "/salon/customers", label: "Customers", icon: Users },
     ] },
-    { id: "payroll", label: "Payroll", icon: Wallet, items: [{ to: "/staff/salaries", label: "My Salary Slips", icon: Wallet }] },
+    { id: "payroll", label: "Payroll", icon: Wallet, items: [{ to: "/salon/salaries", label: "My Salary Slips", icon: Wallet }] },
   ],
   admin: [
-    { id: "overview", label: "Overview", icon: BarChart3, items: [{ to: "/staff/dashboard", label: "Sales Dashboard", icon: BarChart3 }] },
+    { id: "overview", label: "Overview", icon: BarChart3, items: [{ to: "/salon/dashboard", label: "Sales Dashboard", icon: BarChart3 }] },
     { id: "salon", label: "Salon", icon: CalendarDays, items: [
-      { to: "/staff/calendar", label: "Booking Calendar", icon: CalendarDays },
-      { to: "/staff/new-booking", label: "New Booking", icon: CalendarPlus },
-      { to: "/staff/customers", label: "Customers", icon: Users },
-      { to: "/staff/services", label: "Services", icon: Scissors },
+      { to: "/salon/calendar", label: "Booking Calendar", icon: CalendarDays },
+      { to: "/salon/new-booking", label: "New Booking", icon: CalendarPlus },
+      { to: "/salon/customers", label: "Customers", icon: Users },
+      { to: "/salon/services", label: "Services", icon: Scissors },
     ] },
     { id: "finance", label: "Finance", icon: Receipt, items: [
-      { to: "/staff/billing", label: "Billing", icon: Receipt },
-      { to: "/staff/salaries", label: "Salaries", icon: Wallet },
+      { to: "/salon/billing", label: "Billing", icon: Receipt },
+      { to: "/salon/salaries", label: "Salaries", icon: Wallet },
     ] },
-    { id: "team", label: "Team", icon: UserCog, items: [{ to: "/staff/team", label: "Team", icon: UserCog }] },
+    { id: "team", label: "Team", icon: UserCog, items: [{ to: "/salon/team", label: "Team", icon: UserCog }] },
   ],
 };
 
@@ -45,7 +47,13 @@ export default function Shell() {
   const navigate = useNavigate();
   const [mode, toggleMode] = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  // Sidebar starts collapsed (icon rail only); the choice is remembered per browser.
+  const [collapsed, setCollapsedState] = useState(() => { try { return localStorage.getItem("gm_sidebar") !== "open"; } catch { return true; } });
+  const setCollapsed = (next) => setCollapsedState((c) => {
+    const value = typeof next === "function" ? next(c) : next;
+    try { localStorage.setItem("gm_sidebar", value ? "closed" : "open"); } catch { /* storage blocked */ }
+    return value;
+  });
 
   const groups = NAV[user.role] || NAV.customer;
   const active = groups.find((g) => g.items.some((i) => pathname.startsWith(i.to))) || groups[0];
@@ -95,9 +103,12 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-border px-4 py-2 text-xs text-ink-muted">
-          <div className="truncate font-medium text-ink-secondary">{user.name}</div>
-          <div>{user.role === "admin" ? "Salon admin" : user.role === "staff" ? "Salon staff" : "Customer"}</div>
+        <div className="flex items-center gap-2.5 border-t border-border px-4 py-2.5 text-xs text-ink-muted">
+          <Avatar user={user} size={30} />
+          <div className="min-w-0">
+            <div className="truncate font-medium text-ink-secondary">{user.name}</div>
+            <div>{user.role === "admin" ? "Salon admin" : user.role === "staff" ? "Salon staff" : "Customer"}</div>
+          </div>
         </div>
         <button onClick={signOut} className="flex items-center gap-2 border-t border-border px-4 py-3 text-[13px] text-ink-secondary hover:bg-surface-3"><LogOut size={14} /> Logout</button>
       </aside>
@@ -110,7 +121,10 @@ export default function Shell() {
           <nav aria-label="Breadcrumb" className="hidden text-[11px] text-link sm:block">
             <Link to={home} className="hover:underline">Home</Link> <span className="text-ink-muted">/</span> <span>{page.label}</span>
           </nav>
-          <div id="topbar-actions" className="ml-auto flex items-center gap-2" />
+          <div className="ml-auto flex items-center gap-2">
+            <div id="topbar-actions" className="flex items-center gap-2" />
+            <ProfileMenu user={user} onSignOut={signOut} />
+          </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4"><Outlet /></main>
       </div>

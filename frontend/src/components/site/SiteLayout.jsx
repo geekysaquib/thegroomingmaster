@@ -29,8 +29,8 @@ export function BrandMark({ className = "" }) {
 
 export default function SiteLayout({ children }) {
   const { user } = useAuth();
-  const account = user ? (user.role === "customer" ? "/app/book" : "/staff/calendar") : "/login";
-  const book = user ? (user.role === "customer" ? "/app/book" : "/staff/new-booking") : "/register";
+  const account = user ? (user.role === "customer" ? "/app/book" : "/salon/calendar") : "/login";
+  const book = user ? (user.role === "customer" ? "/app/book" : "/salon/new-booking") : "/register";
 
   return (
     <div className="theme-kre8 min-h-full">
@@ -98,7 +98,7 @@ export default function SiteLayout({ children }) {
         <div className="border-t border-border">
           <Container className="flex flex-wrap items-center justify-between gap-2 py-5 text-sm">
             <span>© {new Date().getFullYear()} The Grooming Master. All rights reserved.</span>
-            <Link to="/staff-login" className="hover:text-accent">Staff login</Link>
+            <Link to="/salon-login" className="hover:text-accent">Salon login</Link>
           </Container>
         </div>
       </footer>

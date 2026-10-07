@@ -411,7 +411,7 @@ function Blog() {
 export default function Landing() {
   const { user } = useAuth();
   const data = useSalonData();
-  const book = user ? (user.role === "customer" ? "/app/book" : "/staff/new-booking") : "/register";
+  const book = user ? (user.role === "customer" ? "/app/book" : "/salon/new-booking") : "/register";
   return (
     <SiteLayout>
       <Hero book={book} />

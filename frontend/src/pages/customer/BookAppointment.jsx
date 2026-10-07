@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Clock } from "lucide-react";
 import { api, errMsg } from "../../lib/api";
+import { useAuth } from "../../lib/auth";
+import WelcomeBanner from "../../components/WelcomeBanner";
 import { SECTIONS, categoryLabel, priceLabel } from "../../lib/format";
 import { Button, ErrorNote, Field, PageTitle, Panel, Spinner, Textarea } from "../../components/ui";
 
@@ -22,6 +24,7 @@ const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${Stri
 
 export default function BookAppointment() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [services, setServices] = useState(null);
   const [filter, setFilter] = useState("all");
   const [service, setService] = useState(null);
@@ -49,10 +52,11 @@ export default function BookAppointment() {
     return (
       <Panel className="mx-auto max-w-md" bodyClassName="p-8 text-center">
         <CheckCircle2 className="mx-auto text-success" size={40} />
-        <h2 className="mt-3 text-lg font-semibold text-ink-primary">You're booked in!</h2>
+        <h2 className="mt-3 text-lg font-semibold text-ink-primary">{done.status === "pending" ? "Request sent!" : "You're booked in!"}</h2>
         <p className="mt-1 text-sm text-ink-secondary">
           {done.service.name} on {new Date(done.start_at).toLocaleString("en-IN", { dateStyle: "full", timeStyle: "short" })}
         </p>
+        {done.status === "pending" && <p className="mt-2 text-xs text-ink-muted">The salon will confirm your appointment shortly. You can track it in My Bookings.</p>}
         <div className="mt-6 flex justify-center gap-2">
           <Button variant="secondary" onClick={() => { setDone(null); setService(null); setNotes(""); }}>Book another</Button>
           <Button onClick={() => navigate("/app/bookings")}>View my bookings</Button>
@@ -66,6 +70,8 @@ export default function BookAppointment() {
 
   return (
     <>
+      <WelcomeBanner user={user} message="Choose a service, pick a time and we'll take care of the rest." />
+      <div className="h-4" />
       <PageTitle title="Book an appointment" subtitle="1. Choose a service  ·  2. Pick a day and time  ·  3. Confirm" />
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="lg:col-span-3">
