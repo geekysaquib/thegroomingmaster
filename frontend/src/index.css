@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   App theme - matches the monoZHub console: light gray canvas, white
+   cards, lime active state, black primary buttons. Dark mode below.
+   Public pages (landing, login) opt into .theme-kre8 further down.
+   ------------------------------------------------------------------ */
+:root {
+  --surface-0: #efefed;  /* canvas + icon rail */
+  --surface-1: #ffffff;  /* cards, sidebar, tables */
+  --surface-2: #f6f6f4;  /* table header, nested panels */
+  --surface-3: #ebebe8;  /* hover */
+  --border-subtle: #e2e2de;
+  --border-strong: #cdcdc7;
+  --text-primary: #1c1c1c;
+  --text-secondary: #5d6068;
+  --text-muted: #8b8f98;
+  --accent: #b6f040;            /* lime: active nav, selected states */
+  --accent-hover: #a5e12c;
+  --accent-foreground: #1a1a1a;
+  --btn-bg: #1c1c1c;            /* primary buttons are black */
+  --btn-fg: #ffffff;
+  --btn-hover: #38383a;
+  --link: #3157a6;
+  --success: #12875a;
+  --warning: #b7791f;
+  --danger: #d23b3b;
+  --info: #1d6fb8;
+  --hover-overlay: rgba(0, 0, 0, 0.04);
+
+  --primary-0: #f5fbe6; --primary-100: #e9f8c4; --primary-200: #d6f08e; --primary-300: #c4e865;
+  --primary-400: #b6f040; --primary-500: #a5e12c; --primary-600: #7fb41a; --primary-700: #5f8a10;
+
+  --gray-0: #f6f6f4; --gray-100: #ebebe8; --gray-200: #e2e2de; --gray-300: #cdcdc7; --gray-400: #a9a9a3;
+  --gray-500: #8b8f98; --gray-600: #5d6068; --gray-700: #3a3c42; --gray-800: #1c1c1c; --gray-900: #0e0e0e;
+
+  --background: var(--surface-0);
+  --foreground: var(--text-primary);
+  --border: var(--border-subtle);
+
+  /* Chart series (dataviz reference palette, light steps) */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --grid: #e2e2de;
+  color-scheme: light;
+}
+
+:root[data-mode="dark"] {
+  --surface-0: #14161d;
+  --surface-1: #1b1e27;
+  --surface-2: #20242e;
+  --surface-3: #282d39;
+  --border-subtle: #2a2f3c;
+  --border-strong: #3a4152;
+  --text-primary: #e8eaf0;
+  --text-secondary: #a8aebd;
+  --text-muted: #7a8296;
+  --accent: #b6f040;
+  --accent-hover: #cbf56f;
+  --accent-foreground: #14161d;
+  --btn-bg: #b6f040;
+  --btn-fg: #14161d;
+  --btn-hover: #cbf56f;
+  --link: #7aa7f0;
+  --success: #34d399;
+  --warning: #f5b84a;
+  --danger: #f06a6a;
+  --info: #5bb5f0;
+  --hover-overlay: rgba(255, 255, 255, 0.06);
+
+  --primary-0: #232b14; --primary-100: #2f3b17; --primary-200: #435419; --primary-300: #5d741b;
+  --primary-400: #8ab52d; --primary-500: #a5d63a; --primary-600: #b6f040; --primary-700: #cbf56f;
+
+  --gray-0: #1b1e27; --gray-100: #20242e; --gray-200: #2a2f3c; --gray-300: #3a4152; --gray-400: #566078;
+  --gray-500: #7a8296; --gray-600: #a8aebd; --gray-700: #c9cedb; --gray-800: #e8eaf0; --gray-900: #f6f7fa;
+
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --grid: #2a2f3c;
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------
+   Public site theme - dark charcoal + champagne gold, Inter Tight
+   (the palette and font of the reference homepage). Fixed (ignores
+   light/dark) so the public pages always look the same.
+   ------------------------------------------------------------------ */
+.theme-kre8 {
+  --surface-0: #111214;
+  --surface-1: #17181b;
+  --surface-2: #1d1e22;
+  --surface-3: #26272c;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-primary: #ffffff;
+  --text-secondary: #b9bbc2;
+  --text-muted: #81838a;
+  --accent: #c9b182;
+  --accent-hover: #d8c498;
+  --accent-foreground: #111214;
+  --btn-bg: #c9b182;
+  --btn-fg: #111214;
+  --btn-hover: #d8c498;
+  --link: #c9b182;
+  --danger: #e65757;
+  --success: #6fcf97;
+  --hover-overlay: rgba(255, 255, 255, 0.06);
+  --border: var(--border-subtle);
+  background: var(--surface-0);
+  color: var(--text-muted);
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 16px;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .font-display { font-family: Cinzel, "Cormorant Garamond", Georgia, serif; }
+}
+
+/* Print only the element marked .print-area (receipt / salary slip), wherever it sits in the DOM. */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: fixed; inset: 0; margin: 0 auto; border: 0 !important; box-shadow: none !important; }
+}

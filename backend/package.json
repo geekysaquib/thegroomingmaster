@@ -1,0 +1,25 @@
+{
+  "name": "grooming-master-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "seed:admin": "node src/seed-admin.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "bcryptjs": "^3.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "nodemailer": "^7.0.0",
+    "pdfkit": "^0.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
