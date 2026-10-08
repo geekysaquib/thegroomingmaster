@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 16 100 176">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#f8e9ae"/><stop offset="0.4" stop-color="#d9b04a"/><stop offset="1" stop-color="#8a6410"/></linearGradient>
-    <linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2810"/><stop offset="1" stop-color="#170d04"/></linearGradient>
-  </defs>
-  <path d="M121 58 L116 33 L134 46 L150 24 L166 46 L184 33 L179 58 Z" fill="url(#g)"/>
-  <rect x="120" y="57" width="60" height="8" rx="1.5" fill="url(#g)"/>
-  <path d="M103 70 H197 V128 C197 158 177 177 150 190 C123 177 103 158 103 128 Z" fill="url(#d)" stroke="url(#g)" stroke-width="5"/>
-  <text x="150" y="132" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="46" letter-spacing="-7" fill="url(#g)">CM</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 16 100 176"><defs><linearGradient id="g" x1="0" x2=".6" y1="0" y2="1"><stop offset="0" stop-color="#f8e9ae"/><stop offset=".4" stop-color="#d9b04a"/><stop offset="1" stop-color="#8a6410"/></linearGradient><linearGradient id="d" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b2810"/><stop offset="1" stop-color="#170d04"/></linearGradient></defs><path fill="url(#g)" d="M121 58 L116 33 L134 46 L150 24 L166 46 L184 33 L179 58 Z"/><rect width="60" height="8" x="120" y="57" fill="url(#g)" rx="1.5"/><path fill="url(#d)" stroke="url(#g)" stroke-width="5" d="M103 70 H197 V128 C197 158 177 177 150 190 C123 177 103 158 103 128 Z"/><text x="150" y="132" fill="url(#g)" font-family="Georgia, serif" font-size="46" font-weight="700" letter-spacing="-7" text-anchor="middle">CM</text></svg>
