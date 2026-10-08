@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, BadgeCheck, Check, ChevronDown, Clock, Crown, MapPin, Phone, ShoppingBag, Scissors, UserRound } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Droplets, Leaf, MapPin, Phone, Scissors, ShieldCheck, Sparkles } from "lucide-react";
 import { api } from "../lib/api";
 import { SALON, SECTIONS, rs } from "../lib/format";
 import { useAuth } from "../lib/auth";
-import { ABOUT_POINTS, BENEFITS, BLOG, FAQ, PLANS, PRODUCTS, TEAM, TESTIMONIALS, WHY } from "../lib/siteContent";
+import { CATEGORIES, FAQ, PRODUCTS, PRODUCT_GROUPS } from "../lib/siteContent";
 import SiteLayout, { InstagramIcon } from "../components/site/SiteLayout";
 import EnquiryForm from "../components/site/EnquiryForm";
 import { Btn, Card, Container, Heading, Img, SectionTag } from "../components/site/parts";
 
-const Section = ({ id, className = "", children }) => <section id={id} className={`scroll-mt-24 py-16 sm:py-24 ${className}`}><Container>{children}</Container></section>;
-const WHY_ICONS = { user: UserRound, scissors: Scissors, crown: Crown, badge: BadgeCheck };
+const Section = ({ id, className = "", children }) => <section id={id} className={`scroll-mt-24 py-20 sm:py-28 ${className}`}><Container>{children}</Container></section>;
 
 function useSalonData() {
   const [services, setServices] = useState(null);
@@ -19,109 +18,172 @@ function useSalonData() {
     const list = services || [];
     const bySection = {};
     for (const s of list) (bySection[s.section] ||= []).push(s);
-    const minPrice = (names) => Math.min(...names.flatMap((n) => (bySection[n] || []).map((s) => Number(s.price))), Infinity);
-    return { loaded: services !== null, list, bySection, count: list.length, sectionCount: Object.keys(bySection).length, minPrice };
+    return { loaded: services !== null, list, bySection, count: list.length };
   }, [services]);
 }
 
-function Hero({ book }) {
+const HERO_STATS = (count) => [["6", "Signature formulas"], [count ? `${count}+` : "50+", "Salon services"], ["7 days", "Open every week"]];
+
+function Hero({ data, book }) {
   return (
-    <section className="relative overflow-hidden border-b border-border">
-      <Container className="grid items-center gap-10 py-14 lg:grid-cols-[1.05fr_1fr] lg:py-20">
-        <div>
-          <SectionTag>Luxury salon for him &amp; her</SectionTag>
-          <Heading as="h1" className="!text-[40px] sm:!text-[64px]">Look good. <em>Feel great.</em></Heading>
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed">Hair, skin, makeup and nails by skilled stylists, in a calm and luxurious space. Choose your service, pick a time and we'll take care of the rest.</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Btn as={Link} to={book}>Book An Appointment</Btn>
-            <Btn as="a" href="#services" variant="outline">Explore Our Services</Btn>
+    <section className="relative isolate flex min-h-[640px] items-end overflow-hidden md:min-h-[720px] md:items-center lg:min-h-[calc(100svh-124px)]">
+      <Img name="home/hero-wide.jpg" pos="74% 30%" alt="Indian woman with long, glossy dark hair" className="absolute inset-0 -z-20" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#f4ebdc] via-[#f4ebdc]/70 to-transparent md:bg-gradient-to-r md:from-[#f4ebdc]/95 md:via-[#f4ebdc]/55 md:to-transparent" />
+      <Container className="py-14 md:py-24">
+        <div className="max-w-xl">
+          <SectionTag>Premium haircare &amp; luxury salon</SectionTag>
+          <Heading as="h1" className="!text-[60px] sm:!text-[104px] !leading-[0.92]">Beautiful hair,<br />expertly cared for.</Heading>
+          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-ink-secondary">Salon-grade products and master stylists under one roof in Mohali. Shop the range, or book your visit.</p>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Btn as="a" href="#bestsellers">Shop products</Btn>
+            <Btn as={Link} to={book} variant="outline">Book appointment</Btn>
           </div>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {["Hair", "Skin", "Makeup", "Nails"].map((t) => <span key={t} className="rounded-full border border-border bg-white/[0.05] px-4 py-1.5 text-sm text-white">{t}</span>)}
-          </div>
-          <div className="mt-10 grid gap-6 border-t border-border pt-8 sm:grid-cols-2">
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-white"><Clock size={18} className="text-accent" /> <span className="text-lg font-medium">Working Hours</span></div>
-              <p>{SALON.hours}</p>
-            </div>
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-white"><MapPin size={18} className="text-accent" /> <span className="text-lg font-medium">Studio Location</span></div>
-              <a href={SALON.mapUrl} target="_blank" rel="noreferrer" className="hover:text-accent">SCO 19, First Floor, Sector 89, Mohali</a>
-            </div>
-          </div>
+          <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-ink-primary/15 pt-7">
+            {HERO_STATS(data.count).map(([n, l]) => (
+              <div key={l}><dt className="font-head-lux text-4xl text-ink-primary">{n}</dt><dd className="mt-1 text-[12px] uppercase tracking-[0.14em] text-ink-secondary">{l}</dd></div>
+            ))}
+          </dl>
         </div>
-        <Img name="hero" alt="Stylist at work in the studio" className="aspect-[4/5] rounded-3xl border border-border lg:aspect-[5/6]" />
       </Container>
     </section>
   );
 }
 
-function About({ data }) {
+const TRUST = [
+  [ShieldCheck, "Genuine & salon-tested", "Every product is used and approved by our stylists."],
+  [Leaf, "Made for Indian hair", "Argan, amla and bhringraj-led formulas."],
+  [Droplets, "Visible results", "Shine, softness and strength from the first use."],
+  [Sparkles, "Expert guidance", "Personal advice in the studio, no guesswork."],
+];
+
+function Trust() {
   return (
-    <Section id="about">
-      <div className="grid items-center gap-12 lg:grid-cols-2">
-        <div className="relative">
-          <Img name="about-1" alt="Inside the salon" className="aspect-[4/5] rounded-3xl border border-border" />
-          <div className="absolute -bottom-8 right-4 hidden w-1/2 sm:block"><Img name="about-2" alt="Styling in progress" className="aspect-square rounded-2xl border-4 border-surface-0" /></div>
-        </div>
-        <div>
-          <SectionTag>About us</SectionTag>
-          <Heading>Modern hair, personal style, <em>exceptional experience</em></Heading>
-          <p className="mt-6 text-[17px] leading-relaxed">The Grooming Master is a luxury salon in Sector 89, Mohali. We bring together expert technique, quality products and a welcoming atmosphere so that every visit leaves you looking and feeling your best.</p>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {ABOUT_POINTS.map((p) => (
-              <div key={p.title}><h3 className="text-xl font-medium text-white">{p.title}</h3><p className="mt-2 text-[15px] leading-relaxed">{p.text}</p></div>
-            ))}
+    <section className="border-b border-border">
+      <Container className="grid grid-cols-2 gap-x-6 gap-y-8 py-10 lg:grid-cols-4">
+        {TRUST.map(([Icon, t, d]) => (
+          <div key={t} className="flex items-start gap-4">
+            <Icon size={22} strokeWidth={1.4} className="mt-0.5 shrink-0 text-accent" />
+            <div><div className="text-[15px] font-medium text-ink-primary">{t}</div><p className="mt-1 hidden text-[14px] leading-snug sm:block">{d}</p></div>
           </div>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
-            <Card className="px-6 py-4">
-              <div className="text-4xl font-medium text-accent">{data.count ? `${data.count}+` : "50+"}</div>
-              <div className="text-sm">Services on our menu</div>
-            </Card>
-            <div className="flex flex-wrap items-center gap-4">
-              <Btn as={Link} to="/contact">Know About Us</Btn>
-              <a href={`tel:${SALON.phones[0]}`} className="flex items-center gap-3 text-white hover:text-accent">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border"><Phone size={18} className="text-accent" /></span>
-                <span><span className="block text-xs">Call us</span><span className="font-medium">+91 {SALON.phones[0]}</span></span>
-              </a>
-            </div>
-          </div>
-        </div>
+        ))}
+      </Container>
+    </section>
+  );
+}
+
+function Categories({ onPick }) {
+  return (
+    <Section id="shop">
+      <div className="mb-14 flex flex-wrap items-end justify-between gap-6">
+        <div><SectionTag>Shop by category</SectionTag><Heading>Your routine, <em>step by step</em></Heading></div>
+        <p className="max-w-sm">Cleanse, treat and style with products that work together.</p>
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-5">
+        {CATEGORIES.map((c) => (
+          <a key={c.name} href="#bestsellers" onClick={() => onPick(c.group)} className="group block text-center">
+            <Img name={c.img} alt={c.name} className="aspect-[4/5] rounded-2xl [&_img]:transition-transform [&_img]:duration-700 group-hover:[&_img]:scale-105" />
+            <span className="mt-4 inline-flex items-center gap-1 font-head-lux text-2xl text-ink-primary">{c.name}<ArrowUpRight size={16} className="text-accent opacity-0 transition-opacity group-hover:opacity-100" /></span>
+          </a>
+        ))}
       </div>
     </Section>
   );
 }
 
-const SERVICE_CARDS = [
-  { title: "Hair Care & Styling", img: "service-1", sections: ["Hair Care", "Hair Services"], text: "Root touch-ups, blow dry, ironing, colour, keratin, botox, balayage and more." },
-  { title: "Waxing & Bleach", img: "service-2", sections: ["Waxing", "Bleach"], text: "Smooth, comfortable waxing in Basic or Rica ranges, plus brightening bleach." },
-  { title: "Face & Body Grooming", img: "service-3", sections: ["Grooming"], text: "Eyebrows, upper lip, forehead, side locks and full-face finishing touches." },
-  { title: "Male Grooming", img: "service-4", sections: ["Male Grooming"], text: "Haircuts, the New Look, beard shaping and beard or hair colour." },
+function Bestsellers({ group, setGroup }) {
+  const items = group === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.group === group);
+  return (
+    <Section id="bestsellers" className="bg-surface-1">
+      <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+        <div><SectionTag>Bestsellers</SectionTag><Heading>The signature <em>collection</em></Heading></div>
+        <div role="tablist" aria-label="Filter products" className="flex flex-wrap gap-2">
+          {PRODUCT_GROUPS.map((g) => (
+            <button key={g} role="tab" aria-selected={group === g} onClick={() => setGroup(g)}
+              className={`rounded-full border px-5 py-2 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors ${group === g ? "border-ink-primary bg-ink-primary text-white" : "border-border text-ink-primary hover:border-ink-primary"}`}>{g}</button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-12 sm:gap-x-8 lg:grid-cols-3">
+        {items.map((p) => (
+          <article key={p.id} className="group">
+            <div className="relative">
+              <Img name={p.img} alt={p.name} className="aspect-[4/5] rounded-2xl [&_img]:transition-transform [&_img]:duration-700 group-hover:[&_img]:scale-105" />
+              {p.tag && <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-primary">{p.tag}</span>}
+              <Link to="/contact" className="absolute inset-x-4 bottom-4 rounded-full bg-ink-primary py-3 text-center text-[12px] font-medium uppercase tracking-[0.16em] text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">Enquire to buy</Link>
+            </div>
+            <div className="mt-5 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-head-lux text-[23px] leading-tight text-ink-primary">{p.name}</h3>
+                <p className="mt-1 text-[13px] uppercase tracking-[0.1em]">{p.type}</p>
+              </div>
+              <div className="shrink-0 text-right text-[17px] text-ink-primary">{rs(p.price)}{p.mrp && <div className="text-[13px] text-ink-muted line-through">{rs(p.mrp)}</div>}</div>
+            </div>
+            <p className="mt-2 hidden text-[14px] leading-relaxed sm:block">{p.benefit}</p>
+          </article>
+        ))}
+      </div>
+      <p className="mt-12 text-center text-sm">All products are available at our Mohali studio. Prices inclusive of taxes.</p>
+    </Section>
+  );
+}
+
+const GALLERY = [
+  { img: "home/g-blowdry.jpg", label: "Layered blow-dry", cls: "md:row-span-2" },
+  { img: "home/g-salon.jpg", label: "The studio", cls: "md:col-span-2" },
+  { img: "home/g-bridal.jpg", label: "Bridal updo", cls: "md:row-span-2", pos: "50% 25%" },
+  { img: "home/g-balayage.jpg", label: "Honey balayage" },
+  { img: "home/g-beard.jpg", label: "Beard sculpting" },
+  { img: "home/g-fade.jpg", label: "Precision fade", cls: "md:row-span-2" },
+  { img: "home/g-hands.jpg", label: "Artistry in detail", cls: "md:col-span-2" },
+  { img: "home/g-curls.jpg", label: "Natural curls", cls: "md:row-span-2" },
+  { img: "home/skin.jpg", label: "Glow & brows", pos: "50% 30%" },
+  { img: "home/ritual.jpg", label: "The hair ritual" },
 ];
 
-function Services({ data }) {
+function Gallery() {
   return (
-    <Section id="services">
-      <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl"><SectionTag>Our services</SectionTag><Heading>Everything you need for <em>effortless style</em></Heading></div>
-        <div className="max-w-md"><p className="mb-4">From a quick blow dry to a complete transformation, find a service for every occasion.</p><Btn as="a" href="#price-list" variant="outline">View Price List</Btn></div>
+    <Section id="gallery">
+      <div className="mb-14 flex flex-wrap items-end justify-between gap-6">
+        <div><SectionTag>Gallery</SectionTag><Heading>Looks crafted <em>in our studio</em></Heading></div>
+        <Btn as="a" href={SALON.instagramUrl} target="_blank" rel="noreferrer" variant="outline">Follow {SALON.instagram}</Btn>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {SERVICE_CARDS.map((c) => {
-          const from = data.minPrice(c.sections);
-          return (
-            <a key={c.title} href="#price-list" className="group relative flex min-h-[420px] flex-col justify-end overflow-hidden rounded-2xl border border-border">
-              <Img name={c.img} alt="" className="absolute inset-0 transition-transform duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-              <div className="relative p-6">
-                {Number.isFinite(from) && <div className="mb-3 inline-block rounded-full bg-accent px-3 py-1 text-sm font-medium text-accent-foreground">Starting from {rs(from)}</div>}
-                <h3 className="text-2xl font-medium text-white">{c.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-white/75">{c.text}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent">Learn more <ArrowUpRight size={15} /></span>
-              </div>
-            </a>
-          );
-        })}
+      <div className="grid auto-rows-[190px] grid-cols-2 gap-3 [grid-auto-flow:dense] md:auto-rows-[210px] md:grid-cols-4 md:gap-4">
+        {GALLERY.map((g) => (
+          <figure key={g.label} className={`group relative overflow-hidden rounded-xl ${g.cls || ""}`}>
+            <Img name={g.img} pos={g.pos} alt={g.label} className="absolute inset-0 [&_img]:transition-transform [&_img]:duration-700 group-hover:[&_img]:scale-105" />
+            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#17130f]/75 to-transparent p-4 pt-12 text-[12px] font-medium uppercase tracking-[0.18em] text-white opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">{g.label}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+const SPECIALITIES = ["Precision cuts & styling", "Colour, balayage & highlights", "Keratin, botox & smoothing", "Bridal & occasion hair", "Men's haircuts & beard grooming"];
+
+function Stylists({ book }) {
+  return (
+    <Section id="stylists" className="bg-surface-1">
+      <div className="grid items-center gap-14 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
+        <div className="relative">
+          <Img name="home/stylist-work.jpg" pos="45% 40%" alt="A hairdresser cutting a client's hair in the salon" className="aspect-[4/3] rounded-2xl" />
+          <div className="absolute -bottom-6 right-4 rounded-2xl bg-white px-6 py-4 shadow-[0_18px_40px_-18px_rgba(26,23,20,0.35)] sm:right-8">
+            <div className="font-head-lux text-4xl text-ink-primary">1-to-1</div>
+            <div className="text-[12px] uppercase tracking-[0.14em]">Consultation every visit</div>
+          </div>
+        </div>
+        <div>
+          <SectionTag>Our hairdressers</SectionTag>
+          <Heading>Skilled hands, <em>personal care</em></Heading>
+          <p className="mt-6 max-w-lg text-[17px] leading-relaxed">Every visit starts with a conversation. Our stylists study your hair, your face shape and your routine, then craft a look that suits you and recommend the right products to keep it that way at home.</p>
+          <ul className="mt-8 divide-y divide-border border-y border-border">
+            {SPECIALITIES.map((x) => <li key={x} className="flex items-center gap-3 py-3.5 text-[16px] text-ink-primary"><Scissors size={16} className="shrink-0 text-accent" />{x}</li>)}
+          </ul>
+          <div className="mt-9 flex flex-wrap gap-3">
+            <Btn as={Link} to={book}>Book with a stylist</Btn>
+            <Btn as="a" href="#services" variant="outline" arrow={false}>See services</Btn>
+          </div>
+        </div>
       </div>
     </Section>
   );
@@ -130,8 +192,8 @@ function Services({ data }) {
 function PriceRow({ name, children }) {
   return (
     <li className="flex items-baseline gap-3 py-1.5">
-      <span className="text-[16px] text-white">{name}</span>
-      <span className="min-w-3 flex-1 border-b border-dotted border-white/20" />
+      <span className="text-[16px] text-ink-primary">{name}</span>
+      <span className="min-w-3 flex-1 border-b border-dotted border-ink-primary/25" />
       {children}
     </li>
   );
@@ -150,19 +212,28 @@ function PriceCard({ title, items }) {
   }, [items, waxing]);
 
   return (
-    <Card className="p-6">
-      <h3 className="mb-3 text-2xl font-medium text-accent">{title}</h3>
+    <Card className="p-7">
+      <h3 className="mb-3 font-head-lux text-3xl text-accent">{title}</h3>
       {waxing && <div className="flex justify-end gap-6 pb-1 text-xs uppercase tracking-wider"><span className="w-16 text-right">Basic</span><span className="w-16 text-right">Rica*</span></div>}
       <ul>
         {waxing
-          ? pairs.map(([name, p]) => <PriceRow key={name} name={name}><span className="w-16 text-right text-white">{rs(p.Basic)}</span><span className="w-16 text-right text-white">{rs(p.Rica)}</span></PriceRow>)
-          : items.map((s) => <PriceRow key={s.id} name={s.name}><span className="whitespace-nowrap text-white">{rs(s.price)}{s.price_type === "onwards" && <span className="ml-1 text-xs text-ink-muted">onwards</span>}</span></PriceRow>)}
+          ? pairs.map(([name, p]) => <PriceRow key={name} name={name}><span className="w-16 text-right text-ink-primary">{rs(p.Basic)}</span><span className="w-16 text-right text-ink-primary">{rs(p.Rica)}</span></PriceRow>)
+          : items.map((s) => <PriceRow key={s.id} name={s.name}><span className="whitespace-nowrap text-ink-primary">{rs(s.price)}{s.price_type === "onwards" && <span className="ml-1 text-xs text-ink-muted">onwards</span>}</span></PriceRow>)}
       </ul>
     </Card>
   );
 }
 
-function PriceList({ data, book }) {
+const SERVICE_CARDS = [
+  { title: "Hair Care & Styling", img: "home/g-blowdry.jpg", sections: ["Hair Care", "Hair Services"], text: "Blow dry, colour, keratin, botox, balayage and more." },
+  { title: "Waxing & Bleach", img: "home/skin.jpg", pos: "50% 30%", sections: ["Waxing", "Bleach"], text: "Comfortable waxing in Basic or Rica ranges, plus brightening bleach." },
+  { title: "Face & Grooming", img: "home/g-balayage.jpg", sections: ["Grooming"], text: "Eyebrows, upper lip, forehead and finishing touches." },
+  { title: "Male Grooming", img: "home/g-fade.jpg", sections: ["Male Grooming"], text: "Haircuts, the New Look, beard shaping and colour." },
+];
+
+function Services({ data, book }) {
+  const [open, setOpen] = useState(false);
+  const minPrice = (names) => Math.min(...names.flatMap((n) => (data.bySection[n] || []).map((s) => Number(s.price))), Infinity);
   const cols = useMemo(() => {
     const names = [...SECTIONS.filter((n) => data.bySection[n]), ...Object.keys(data.bySection).filter((n) => !SECTIONS.includes(n))];
     const left = [], right = [];
@@ -171,193 +242,38 @@ function PriceList({ data, book }) {
   }, [data.bySection]);
 
   return (
-    <Section id="price-list" className="border-y border-border bg-surface-1">
-      <div className="mb-12 text-center"><div className="flex justify-center"><SectionTag>Price list</SectionTag></div><Heading>Our <em>menu &amp; prices</em></Heading></div>
-      {!data.loaded ? <p className="text-center">Loading our menu…</p> : data.count === 0 ? <p className="text-center">Our menu is being updated - please call us for prices.</p> : (
-        <div className="grid items-start gap-5 lg:grid-cols-2">
-          {cols.map((col, i) => <div key={i} className="space-y-5">{col.map((n) => <PriceCard key={n} title={n} items={data.bySection[n]} />)}</div>)}
+    <Section id="services">
+      <div className="mb-14 flex flex-wrap items-end justify-between gap-6">
+        <div className="max-w-2xl"><SectionTag>Salon services</SectionTag><Heading>Care for <em>every occasion</em></Heading></div>
+        <div className="flex flex-wrap gap-3">
+          <Btn as={Link} to={book}>Book appointment</Btn>
+          <Btn as="button" variant="outline" arrow={false} onClick={() => setOpen(!open)} aria-expanded={open}>{open ? "Hide" : "View"} price list</Btn>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        {SERVICE_CARDS.map((c) => {
+          const from = minPrice(c.sections);
+          return (
+            <button key={c.title} onClick={() => setOpen(true)} className="group relative isolate flex min-h-[380px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-left sm:min-h-[460px] sm:p-7">
+              <Img name={c.img} pos={c.pos} alt="" className="absolute inset-0 -z-10 [&_img]:transition-transform [&_img]:duration-700 group-hover:[&_img]:scale-105" />
+              <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#17130f]/90 via-[#17130f]/30 to-transparent" />
+              {Number.isFinite(from) && <span className="mb-3 self-start rounded-full bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-primary">From {rs(from)}</span>}
+              <h3 className="font-head-lux text-[28px] leading-none text-white sm:text-[34px]">{c.title}</h3>
+              <p className="mt-2 hidden text-[14px] leading-relaxed text-white/80 sm:block">{c.text}</p>
+            </button>
+          );
+        })}
+      </div>
+      {open && (
+        <div className="mt-16" id="price-list">
+          {!data.loaded ? <p className="text-center">Loading our menu…</p> : data.count === 0 ? <p className="text-center">Our menu is being updated - please call us for prices.</p> : (
+            <div className="grid items-start gap-5 lg:grid-cols-2">
+              {cols.map((col, i) => <div key={i} className="space-y-5">{col.map((n) => <PriceCard key={n} title={n} items={data.bySection[n]} />)}</div>)}
+            </div>
+          )}
+          <p className="mt-6 text-center text-sm">Prices marked “onwards” start at the amount shown. *Rica is our premium wax range.</p>
         </div>
       )}
-      <p className="mt-6 text-center text-sm">Prices marked “onwards” start at the amount shown. *Rica is our premium wax range.</p>
-      <div className="mt-8 flex justify-center"><Btn as={Link} to={book}>Book Your Visit</Btn></div>
-    </Section>
-  );
-}
-
-function Benefits({ data }) {
-  const min = data.minPrice(SECTIONS);
-  const stats = [[data.count ? `${data.count}+` : "50+", "Services on the menu"], [data.sectionCount || 6, "Treatment categories"], [Number.isFinite(min) ? rs(min) : "Rs 30", "Services start from"], ["His & Hers", "Grooming for everyone"]];
-  return (
-    <Section id="benefits">
-      <div className="grid items-center gap-12 lg:grid-cols-2">
-        <Img name="benefits" alt="Consultation at the salon" className="aspect-[5/4] rounded-3xl border border-border" />
-        <div>
-          <SectionTag>Why it feels different</SectionTag>
-          <Heading>The Grooming Master difference, <em>made for you</em></Heading>
-          <ul className="mt-8 space-y-4">
-            {BENEFITS.map((b) => <li key={b} className="flex items-start gap-3 text-[17px] text-white"><span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground"><Check size={14} /></span>{b}</li>)}
-          </ul>
-          <div className="mt-8"><Btn as={Link} to="/contact">Talk To Us</Btn></div>
-        </div>
-      </div>
-      <div className="mt-16 grid grid-cols-2 gap-6 border-y border-border py-10 lg:grid-cols-4">
-        {stats.map(([n, l]) => <div key={l} className="text-center"><div className="text-4xl font-medium text-white sm:text-5xl">{n}</div><div className="mt-1 text-sm">{l}</div></div>)}
-      </div>
-
-      <div className="mt-16 text-center"><Heading className="mx-auto max-w-3xl">Step inside our studio &amp; <em>experience luxury grooming</em></Heading></div>
-      <Img name="studio" alt="The Grooming Master studio" className="mt-10 aspect-[16/8] rounded-3xl border border-border">
-        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-t from-black/85 to-transparent p-6 text-white">
-          <span className="flex items-center gap-2 text-lg font-medium"><Clock size={18} className="text-accent" /> Our Working Hours</span>
-          <span>{SALON.hours}</span>
-        </div>
-      </Img>
-    </Section>
-  );
-}
-
-function WhyChoose({ data }) {
-  return (
-    <Section id="why" className="border-y border-border bg-surface-1">
-      <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr]">
-        <div>
-          <SectionTag>Why choose us</SectionTag>
-          <Heading>More than a haircut. <em>Styles that feel uniquely you.</em></Heading>
-          <p className="mt-5 max-w-xl text-[17px] leading-relaxed">Skill, care and attention to detail in every service, from your first consultation to the final finish.</p>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2">
-            {WHY.map((w) => {
-              const Icon = WHY_ICONS[w.icon];
-              return (
-                <div key={w.title}>
-                  <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white/[0.05] text-accent"><Icon size={24} /></span>
-                  <h3 className="text-xl font-medium text-white">{w.title}</h3><p className="mt-2 text-[15px] leading-relaxed">{w.text}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="col-span-2 flex items-center justify-between px-6 py-5"><div><div className="text-4xl font-medium text-accent">{data.count ? `${data.count}+` : "50+"}</div><div className="text-sm">Services under one roof</div></div><Scissors className="text-accent" size={32} /></Card>
-          <Img name="why-1" alt="" className="col-span-2 aspect-[16/9] rounded-2xl border border-border" />
-          <Img name="why-2" alt="" className="aspect-square rounded-2xl border border-border" />
-          <Img name="why-3" alt="" className="aspect-square rounded-2xl border border-border" />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-function Products() {
-  return (
-    <Section id="products">
-      <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl"><SectionTag>Our products</SectionTag><Heading>Premium care for <em>healthy hair &amp; skin</em></Heading></div>
-        <p className="max-w-md">Take the salon result home with products our stylists trust.</p>
-      </div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {PRODUCTS.map((p, i) => (
-          <Card key={p.name} className="overflow-hidden">
-            <Img name={`product-${i + 1}`} alt={p.name} className="aspect-[4/3]" />
-            <div className="p-6">
-              <div className="text-2xl font-medium text-accent">{p.price}</div>
-              <h3 className="mt-2 text-xl font-medium text-white">{p.name}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed">{p.text}</p>
-              <Btn as={Link} to="/contact" className="mt-5 !px-4 !py-2.5" arrow={false}><ShoppingBag size={16} /> Enquire</Btn>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-function Membership({ book }) {
-  return (
-    <Section id="membership" className="border-y border-border bg-surface-1">
-      <div className="mb-12 max-w-3xl"><SectionTag>Membership plans</SectionTag><Heading>Unlock more style with <em>exclusive member benefits</em></Heading></div>
-      <div className="grid gap-5 lg:grid-cols-3">
-        {PLANS.map((p) => (
-          <div key={p.name} className={`rounded-2xl border p-8 ${p.featured ? "border-accent bg-accent/[0.07]" : "border-border bg-white/[0.04]"}`}>
-            <h3 className="text-xl font-medium text-white">{p.name}</h3>
-            <p className="mt-1 text-[15px]">{p.text}</p>
-            <div className="my-6 text-5xl font-medium text-white">{p.price}<span className="text-base text-ink-muted"> / {p.per}</span></div>
-            <Btn as={Link} to={book} variant={p.featured ? "gold" : "outline"} className="w-full justify-center">Become a Member</Btn>
-            <div className="mb-3 mt-7 text-sm font-medium uppercase tracking-wider text-white">What's included</div>
-            <ul className="space-y-3">{p.perks.map((x) => <li key={x} className="flex items-center gap-3 text-[15px]"><Check size={16} className="shrink-0 text-accent" />{x}</li>)}</ul>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-function Appointment() {
-  return (
-    <Section id="appointment">
-      <div className="grid items-start gap-12 lg:grid-cols-2">
-        <div>
-          <SectionTag>Book an appointment</SectionTag>
-          <Heading>Let's create a look that feels <em>uniquely you</em></Heading>
-          <p className="mt-5 max-w-xl text-[17px] leading-relaxed">Have a question or ready to book? Send us a message and we'll confirm your slot, or call us directly.</p>
-          <ul className="mt-8 space-y-5">
-            <li className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-accent"><Phone size={18} /></span><span><span className="block text-sm">Call us</span>{SALON.phones.map((p) => <a key={p} href={`tel:${p}`} className="block text-lg font-medium text-white hover:text-accent">+91 {p}</a>)}</span></li>
-            <li className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-accent"><InstagramIcon size={18} /></span><span><span className="block text-sm">Instagram</span><a href={SALON.instagramUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-white hover:text-accent">{SALON.instagram}</a></span></li>
-            <li className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-accent"><MapPin size={18} /></span><span><span className="block text-sm">Visit us</span><a href={SALON.mapUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-white hover:text-accent">{SALON.address}</a></span></li>
-          </ul>
-        </div>
-        <EnquiryForm source="appointment" cta="Request Appointment" />
-      </div>
-    </Section>
-  );
-}
-
-function Gallery() {
-  // 11 tiles in a masonry-like grid; add /public/images/gallery-1.jpg ... gallery-11.jpg
-  const spans = ["row-span-2", "", "", "row-span-2", "", "", "", "row-span-2", "", "", ""];
-  return (
-    <Section id="gallery" className="border-t border-border">
-      <div className="mb-12 max-w-3xl"><SectionTag>Our work</SectionTag><Heading>Modern looks crafted for <em>your personal style</em></Heading></div>
-      <div className="grid auto-rows-[170px] grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {spans.map((s, i) => <Img key={i} name={`gallery-${i + 1}`} alt={`Salon work ${i + 1}`} className={`rounded-2xl border border-border ${s}`} />)}
-      </div>
-    </Section>
-  );
-}
-
-function Team() {
-  return (
-    <Section id="team" className="border-y border-border bg-surface-1">
-      <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl"><SectionTag>Meet our experts</SectionTag><Heading>The creative minds behind <em>your style</em></Heading></div>
-        <Btn as={Link} to="/contact" variant="outline">Talk To Our Team</Btn>
-      </div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {TEAM.map((t, i) => (
-          <Card key={i} className="overflow-hidden">
-            <Img name={`team-${i + 1}`} alt={t.name} className="aspect-[4/5]" />
-            <div className="p-6"><h3 className="text-xl font-medium text-white">{t.name}</h3><p className="mt-1 text-[15px]">{t.role}</p></div>
-          </Card>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-function Testimonials({ book }) {
-  return (
-    <Section id="testimonials">
-      <div className="mb-12 max-w-3xl"><SectionTag>Testimonials</SectionTag><Heading>Loved by clients, defined by <em>their style</em></Heading></div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {TESTIMONIALS.map((t, i) => (
-          <Card key={i} className="flex flex-col p-6">
-            <p className="flex-1 text-[15px] leading-relaxed">“{t.text}”</p>
-            <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
-              <Img name={`client-${i + 1}`} alt="" className="h-12 w-12 rounded-full" />
-              <div><div className="font-medium text-white">{t.name}</div><div className="text-sm">{t.role}</div></div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-10 flex justify-center"><Btn as={Link} to={book}>Book an Appointment Today</Btn></div>
     </Section>
   );
 }
@@ -365,21 +281,21 @@ function Testimonials({ book }) {
 function Faq() {
   const [open, setOpen] = useState(0);
   return (
-    <Section id="faq" className="border-y border-border bg-surface-1">
-      <div className="grid gap-12 lg:grid-cols-[1fr_1.3fr]">
+    <Section id="faq" className="bg-surface-1">
+      <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-24">
         <div>
           <SectionTag>FAQ</SectionTag>
-          <Heading>Everything you need to know <em>before your visit</em></Heading>
+          <Heading>Good to <em>know</em></Heading>
           <p className="mt-5">Can't find your answer?</p>
-          <div className="mt-6"><Btn as={Link} to="/contact">Contact Us</Btn></div>
+          <div className="mt-6"><Btn as={Link} to="/contact" variant="outline">Contact us</Btn></div>
         </div>
-        <div className="space-y-3">
+        <div className="divide-y divide-border border-y border-border">
           {FAQ.map((f, i) => (
-            <div key={f.q} className="rounded-2xl border border-border bg-white/[0.04]">
-              <button onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i} className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-lg font-medium text-white">
+            <div key={f.q}>
+              <button onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i} className="flex w-full items-center justify-between gap-4 py-6 text-left font-head-lux text-2xl text-ink-primary">
                 {f.q}<ChevronDown size={20} className={`shrink-0 text-accent transition-transform ${open === i ? "rotate-180" : ""}`} />
               </button>
-              {open === i && <p className="px-6 pb-5 text-[16px] leading-relaxed">{f.a}</p>}
+              {open === i && <p className="pb-6 pr-10 text-[16px] leading-relaxed">{f.a}</p>}
             </div>
           ))}
         </div>
@@ -388,21 +304,21 @@ function Faq() {
   );
 }
 
-function Blog() {
+function Enquire() {
   return (
-    <Section id="blog">
-      <div className="mb-12 max-w-3xl"><SectionTag>Latest blogs</SectionTag><Heading>Trends and tips in <em>hair, skin &amp; grooming</em></Heading></div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {BLOG.map((b, i) => (
-          <Card key={b.title} className="overflow-hidden">
-            <Img name={`blog-${i + 1}`} alt="" className="aspect-[4/3]" />
-            <div className="p-6">
-              <span className="rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wider text-accent">{b.tag}</span>
-              <h3 className="mt-4 text-xl font-medium leading-snug text-white">{b.title}</h3>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent">Coming soon <ArrowUpRight size={15} /></span>
-            </div>
-          </Card>
-        ))}
+    <Section id="appointment">
+      <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-24">
+        <div>
+          <SectionTag>Get in touch</SectionTag>
+          <Heading>Not sure what your hair <em>needs?</em></Heading>
+          <p className="mt-6 max-w-lg text-[17px] leading-relaxed">Tell us about your hair and we'll recommend a routine, or help you book a salon visit. We usually reply the same day.</p>
+          <ul className="mt-9 space-y-3 text-[15px]">
+            <li className="flex items-center gap-3"><Phone size={16} className="text-accent" /> {SALON.phones.map((p, i) => <a key={p} href={`tel:${p}`} className="hover:text-accent">{i ? " · " : ""}+91 {p}</a>)}</li>
+            <li className="flex items-center gap-3"><MapPin size={16} className="text-accent" /><a href={SALON.mapUrl} target="_blank" rel="noreferrer" className="hover:text-accent">{SALON.address}</a></li>
+            <li className="flex items-center gap-3"><InstagramIcon size={16} /><a href={SALON.instagramUrl} target="_blank" rel="noreferrer" className="hover:text-accent">{SALON.instagram}</a></li>
+          </ul>
+        </div>
+        <EnquiryForm source="appointment" cta="Send enquiry" />
       </div>
     </Section>
   );
@@ -411,23 +327,19 @@ function Blog() {
 export default function Landing() {
   const { user } = useAuth();
   const data = useSalonData();
+  const [group, setGroup] = useState("All");
   const book = user ? (user.role === "customer" ? "/app/book" : "/salon/new-booking") : "/register";
   return (
     <SiteLayout>
-      <Hero book={book} />
-      <About data={data} />
-      <Services data={data} />
-      <PriceList data={data} book={book} />
-      <Benefits data={data} />
-      <WhyChoose data={data} />
-      <Products />
-      <Membership book={book} />
-      <Appointment />
+      <Hero data={data} book={book} />
+      <Trust />
+      <Categories onPick={setGroup} />
+      <Bestsellers group={group} setGroup={setGroup} />
       <Gallery />
-      <Team />
-      <Testimonials book={book} />
+      <Stylists book={book} />
+      <Services data={data} book={book} />
       <Faq />
-      <Blog />
+      <Enquire />
     </SiteLayout>
   );
 }

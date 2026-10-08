@@ -128,6 +128,37 @@
   color-scheme: dark;
 }
 
+/* Public site: light, minimal, premium (ivory + champagne gold + warm ink). */
+.theme-lux {
+  --surface-0: #faf8f4;
+  --surface-1: #f4f0e9;
+  --surface-2: #ece6db;
+  --surface-3: #e2dacb;
+  --border-subtle: rgba(26, 23, 20, 0.12);
+  --border-strong: rgba(26, 23, 20, 0.22);
+  --text-primary: #1a1714;
+  --text-secondary: #4f4940;
+  --text-muted: #6f675c;
+  --accent: #8a6c36;
+  --accent-hover: #6f5527;
+  --accent-foreground: #ffffff;
+  --btn-bg: #1a1714;
+  --btn-fg: #ffffff;
+  --btn-hover: #3a332b;
+  --link: #8a6c36;
+  --danger: #c0392b;
+  --success: #2f7d57;
+  --hover-overlay: rgba(26, 23, 20, 0.05);
+  --border: var(--border-subtle);
+  background: var(--surface-0);
+  color: var(--text-muted);
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 16px;
+  color-scheme: light;
+}
+/* Headings: bold condensed sans (closest web font to Agency FB), black, uppercase. */
+.theme-lux .font-head-lux { font-family: "Barlow Condensed", "Agency FB", "Arial Narrow", sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; }
+
 html, body, #root { height: 100%; }
 body {
   margin: 0;

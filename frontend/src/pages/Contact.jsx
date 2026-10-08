@@ -6,10 +6,10 @@ import { Card, Container, Heading, SectionTag } from "../components/site/parts";
 
 export default function Contact() {
   const items = [
-    [Phone, "Call us", SALON.phones.map((p) => <a key={p} href={`tel:${p}`} className="block text-lg font-medium text-white hover:text-accent">+91 {p}</a>)],
-    [MapPin, "Visit us", <a key="a" href={SALON.mapUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-white hover:text-accent">{SALON.address}</a>],
-    [Clock, "Working hours", <span key="h" className="text-lg font-medium text-white">{SALON.hours}</span>],
-    [InstagramIcon, "Follow us", <a key="i" href={SALON.instagramUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-white hover:text-accent">{SALON.instagram}</a>],
+    [Phone, "Call us", SALON.phones.map((p) => <a key={p} href={`tel:${p}`} className="block text-lg font-medium text-ink-primary hover:text-accent">+91 {p}</a>)],
+    [MapPin, "Visit us", <a key="a" href={SALON.mapUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-ink-primary hover:text-accent">{SALON.address}</a>],
+    [Clock, "Working hours", <span key="h" className="text-lg font-medium text-ink-primary">{SALON.hours}</span>],
+    [InstagramIcon, "Follow us", <a key="i" href={SALON.instagramUrl} target="_blank" rel="noreferrer" className="text-lg font-medium text-ink-primary hover:text-accent">{SALON.instagram}</a>],
   ];
   return (
     <SiteLayout>
@@ -35,7 +35,7 @@ export default function Contact() {
       </section>
       <section className="pb-20">
         <Container>
-          <iframe title="Map to The Grooming Master" loading="lazy" className="h-[380px] w-full rounded-2xl border border-border [filter:grayscale(1)_invert(0.92)_contrast(0.9)]"
+          <iframe title="Map to The Grooming Master" loading="lazy" className="h-[380px] w-full rounded-2xl border border-border [filter:grayscale(1)_contrast(0.95)]"
             src={`https://www.google.com/maps?q=${encodeURIComponent("The Grooming Master, SCO 19, Sector 89, Mohali")}&output=embed`} />
         </Container>
       </section>

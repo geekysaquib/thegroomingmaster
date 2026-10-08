@@ -22,13 +22,6 @@ export const WHY = [
 ];
 
 // SAMPLE
-export const PRODUCTS = [
-  { name: "Hair Repair Serum", text: "Lightweight daily serum to tame frizz and add shine.", price: "Rs 899" },
-  { name: "Beard Growth Oil", text: "Nourishing oil for a fuller, softer, healthier beard.", price: "Rs 749" },
-  { name: "Styling Clay", text: "Matte-finish hold for textured, everyday styles.", price: "Rs 599" },
-];
-
-// SAMPLE
 export const PLANS = [
   { name: "Essential", price: "Rs 999", per: "month", text: "Regular grooming made easy.", perks: ["Monthly haircut or blow dry", "Priority booking", "10% off add-on services", "Birthday treat"] },
   { name: "Signature", price: "Rs 2,499", per: "month", featured: true, text: "Our most popular plan for regulars.", perks: ["Two services every month", "Free head massage", "15% off products", "Complimentary touch-up"] },
@@ -51,12 +44,12 @@ export const TESTIMONIALS = [
 ];
 
 export const FAQ = [
-  { q: "Do you accept walk-ins?", a: "Walk-ins are welcome when a stylist is free, but booking online guarantees your slot and your preferred time." },
-  { q: "How do I choose the right service?", a: "Browse the price list on this page or ask our team. We're happy to recommend a service after a quick chat about your hair or skin." },
+  { q: "How do I choose the right product?", a: "Tell us about your hair type and concerns through the enquiry form or at the studio, and our stylists will recommend a routine." },
+  { q: "Are the products suitable for Indian hair types?", a: "Our edit is chosen with Indian hair in mind, from fine and straight to thick, wavy and coloured hair." },
+  { q: "Can I buy products at the studio?", a: "Yes. Every product on this page is available at our Sector 89, Mohali studio. Use Enquire and we'll hold it for you." },
+  { q: "Do you accept walk-ins for salon services?", a: "Walk-ins are welcome when a stylist is free, but booking online guarantees your slot." },
   { q: "Can I change or cancel my appointment?", a: "Yes. Sign in to your account and cancel from My Bookings, or call us and we'll rebook you." },
   { q: "Do you offer consultations?", a: "Every service begins with a short consultation so we agree on the result before we start." },
-  { q: "How long will my service take?", a: "Most services take between 30 minutes and 2.5 hours. The estimated time is shown when you book." },
-  { q: "Can I buy the products you use?", a: "Yes, ask at the studio about the products we recommend for your hair and skin." },
 ];
 
 // SAMPLE
@@ -65,3 +58,31 @@ export const BLOG = [
   { tag: "Skin", title: "Waxing aftercare: what to do and what to avoid" },
   { tag: "Grooming", title: "Beard styling basics for every face shape" },
 ];
+
+// SAMPLE - product names, prices and descriptions are placeholders for the layout; replace with the real range.
+// "group" drives the Bestsellers filter tabs. Images live in /public/images/home.
+export const PRODUCT_GROUPS = ["All", "Cleanse", "Treat", "Style"];
+export const PRODUCTS = [
+  { id: "shampoo", name: "Silk Repair Shampoo", type: "Shampoo · 250 ml", group: "Cleanse", price: 649, mrp: 799, img: "home/shampoo.jpg", tag: "Bestseller", benefit: "Gently cleanses while repairing damaged lengths." },
+  { id: "conditioner", name: "Silk Repair Conditioner", type: "Conditioner · 250 ml", group: "Cleanse", price: 699, img: "home/conditioner.jpg", benefit: "Detangles and seals in softness and shine." },
+  { id: "serum", name: "Argan & Amla Hair Serum", type: "Leave-in serum · 50 ml", group: "Treat", price: 899, img: "home/serum.jpg", tag: "New", benefit: "Tames frizz and adds glass-like shine." },
+  { id: "mask", name: "Deep Nourish Hair Mask", type: "Hair mask · 200 g", group: "Treat", price: 1099, img: "home/mask.jpg", tag: "Bestseller", benefit: "Intense weekly repair for dry, coloured hair." },
+  { id: "oil", name: "Bhringraj Scalp Oil", type: "Hair oil · 100 ml", group: "Treat", price: 749, img: "home/oil.jpg", benefit: "A traditional blend for a healthy, nourished scalp." },
+  { id: "mist", name: "Heat Shield Styling Mist", type: "Styling mist · 150 ml", group: "Style", price: 599, img: "home/mist.jpg", benefit: "Light hold and protection up to 220°C." },
+];
+
+export const CATEGORIES = [
+  { name: "Shampoo", img: "home/shampoo.jpg", group: "Cleanse" },
+  { name: "Conditioner", img: "home/conditioner.jpg", group: "Cleanse" },
+  { name: "Serums & Oils", img: "home/serum.jpg", group: "Treat" },
+  { name: "Masks", img: "home/mask.jpg", group: "Treat" },
+  { name: "Styling", img: "home/mist.jpg", group: "Style" },
+];
+
+export const INGREDIENTS = [
+  { name: "Argan oil", text: "Softens and adds shine without weight." },
+  { name: "Amla", text: "A time-honoured Indian ingredient for strong-looking hair." },
+  { name: "Bhringraj", text: "Traditionally used to nourish the scalp." },
+  { name: "Coconut", text: "Deep moisture for dry, thirsty lengths." },
+];
+
