@@ -1,17 +1,26 @@
-# Netlify build settings. The React app lives in /frontend (the repo root has no package.json).
+# One Netlify site serves both parts of the app:
+#   - the React frontend (frontend/)  -> static files in frontend/dist
+#   - the Express API   (backend/)    -> a single Netlify Function, reached at /api/*
+# The repo root has no package.json, so each part installs its own dependencies in the build command.
 [build]
-  base = "frontend"
-  command = "npm run build"
-  publish = "dist"
+  command = "npm --prefix backend install && npm --prefix frontend install && npm --prefix frontend run build"
+  publish = "frontend/dist"
 
-# The API is NOT hosted on Netlify. Once the backend is deployed (Render, Railway, Fly, ...),
-# uncomment this and put its URL here, ABOVE the SPA fallback rule, so /api calls reach it:
-#
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://YOUR-BACKEND-HOST/api/:splat"
-#   status = 200
-#   force = true
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "backend/netlify/functions"
+  node_bundler = "esbuild"
+  # pdfkit loads font files from its own folder at runtime, so it must not be bundled into one file.
+  external_node_modules = ["pdfkit"]
+
+# API: /api/* -> the Express app running as the "api" function.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+  force = true
 
 # Single-page app fallback: every other path (/login, /salon/calendar, /contact ...) serves index.html
 # so React Router can handle it on refresh / direct links instead of Netlify's "Page not found".
