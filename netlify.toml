@@ -11,7 +11,11 @@
 
 [functions]
   directory = "backend/netlify/functions"
-  # Default bundler: traces and ships the function's node_modules as-is (keeps pdfkit's font files intact).
+  # Bundle the whole Express app into one file. Netlify's default bundler transpiles each ES module to
+  # CommonJS separately, which breaks `export default router` imports ("argument handler must be a function").
+  node_bundler = "esbuild"
+  # pdfkit loads font files from its own folder at runtime, so it is shipped as-is instead of bundled.
+  external_node_modules = ["pdfkit"]
 
 # API: /api/* -> the Express app running as the "api" function.
 [[redirects]]
