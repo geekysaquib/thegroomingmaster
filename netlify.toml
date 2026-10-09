@@ -7,13 +7,11 @@
   publish = "frontend/dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
 
 [functions]
   directory = "backend/netlify/functions"
-  node_bundler = "esbuild"
-  # pdfkit loads font files from its own folder at runtime, so it must not be bundled into one file.
-  external_node_modules = ["pdfkit"]
+  # Default bundler: traces and ships the function's node_modules as-is (keeps pdfkit's font files intact).
 
 # API: /api/* -> the Express app running as the "api" function.
 [[redirects]]
