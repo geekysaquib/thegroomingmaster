@@ -1,0 +1,21 @@
+# Netlify build settings. The React app lives in /frontend (the repo root has no package.json).
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+# The API is NOT hosted on Netlify. Once the backend is deployed (Render, Railway, Fly, ...),
+# uncomment this and put its URL here, ABOVE the SPA fallback rule, so /api calls reach it:
+#
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://YOUR-BACKEND-HOST/api/:splat"
+#   status = 200
+#   force = true
+
+# Single-page app fallback: every other path (/login, /salon/calendar, /contact ...) serves index.html
+# so React Router can handle it on refresh / direct links instead of Netlify's "Page not found".
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
