@@ -128,27 +128,30 @@
   color-scheme: dark;
 }
 
-/* Public site: light, minimal, premium (ivory + champagne gold + warm ink). */
+/* Public site: royal luxury salon - ivory + champagne + antique gold, with near-black ink and accents. */
 .theme-lux {
-  --surface-0: #faf8f4;
-  --surface-1: #f4f0e9;
-  --surface-2: #ece6db;
-  --surface-3: #e2dacb;
-  --border-subtle: rgba(26, 23, 20, 0.12);
-  --border-strong: rgba(26, 23, 20, 0.22);
-  --text-primary: #1a1714;
-  --text-secondary: #4f4940;
-  --text-muted: #6f675c;
-  --accent: #8a6c36;
-  --accent-hover: #6f5527;
+  --surface-0: #fcf7ea;
+  --surface-1: #f6ecd5;
+  --surface-2: #eedfbd;
+  --surface-3: #e4d2a8;
+  --border-subtle: rgba(122, 86, 20, 0.2);
+  --border-strong: rgba(122, 86, 20, 0.38);
+  --text-primary: #1d1710;
+  --text-secondary: #4a3f30;
+  --text-muted: #5f5342;
+  --accent: #946c14;
+  --accent-hover: #75530c;
   --accent-foreground: #ffffff;
-  --btn-bg: #1a1714;
+  --btn-bg: #946c14;
   --btn-fg: #ffffff;
-  --btn-hover: #3a332b;
-  --link: #8a6c36;
-  --danger: #c0392b;
+  --btn-hover: #75530c;
+  --link: #946c14;
+  --danger: #b03a2e;
   --success: #2f7d57;
-  --hover-overlay: rgba(26, 23, 20, 0.05);
+  --hover-overlay: rgba(122, 86, 20, 0.06);
+  --royal: #1a1610;        /* near-black used for footer, overlays and the price menu */
+  --royal-deep: #14110c;
+  --gold-1: #f3dc94; --gold-2: #d4a73c; --gold-3: #a77a1c;
   --border: var(--border-subtle);
   background: var(--surface-0);
   color: var(--text-muted);
@@ -156,8 +159,22 @@
   font-size: 16px;
   color-scheme: light;
 }
-/* Headings: bold condensed sans (closest web font to Agency FB), black, uppercase. */
-.theme-lux .font-head-lux { font-family: "Barlow Condensed", "Agency FB", "Arial Narrow", sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; }
+/* Headings: refined high-contrast serif. */
+.theme-lux .font-head-lux { font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif; font-weight: 600; letter-spacing: 0; font-variant-numeric: lining-nums; }
+.theme-lux .lux-dark { --text-primary: #f8ecc8; --text-secondary: #d9cfbd; --text-muted: #b3a68e; --accent: #e0b955; --accent-hover: #f3dc94; --border: rgba(224, 185, 85, 0.28); }
+.theme-lux .bg-gold { background-image: linear-gradient(180deg, var(--gold-1) 0%, var(--gold-2) 48%, var(--gold-3) 100%); }
+.theme-lux .text-gold { background-image: linear-gradient(180deg, #e9c867 0%, #b88a22 60%, #8e6512 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.theme-lux .gold-frame { border: 1px solid var(--gold-2); box-shadow: inset 0 0 0 5px var(--surface-0), inset 0 0 0 6px var(--gold-2); }
+.theme-lux .ornament { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--gold-3); }
+.theme-lux .ornament::before, .theme-lux .ornament::after { content: ""; height: 1px; width: 64px; background: linear-gradient(90deg, transparent, var(--gold-2)); }
+.theme-lux .ornament::after { transform: scaleX(-1); }
+@keyframes lux-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes lux-kenburns { from { transform: scale(1.04); } to { transform: scale(1.14) translate(-1.5%, -1%); } }
+@keyframes lux-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.theme-lux .marquee-track { animation: lux-marquee 40s linear infinite; }
+.theme-lux .kenburns { animation: lux-kenburns 22s ease-in-out infinite alternate; }
+.theme-lux .rise { animation: lux-rise 0.9s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .theme-lux .marquee-track, .theme-lux .kenburns, .theme-lux .rise { animation: none; } }
 
 html, body, #root { height: 100%; }
 body {

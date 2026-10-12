@@ -20,18 +20,18 @@ export const Container = ({ className = "", children }) => <div className={`mx-a
 /** Small eyebrow label with a hairline */
 export const SectionTag = ({ children }) => (
   <div className="mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.28em] text-accent">
-    <span className="h-px w-8 bg-accent" />{children}
+    <span className="h-px w-8 shrink-0 bg-accent" />{children}
   </div>
 );
 
 /** Serif heading; wrap highlighted words in <em> (rendered italic, gold). */
 export const Heading = ({ as: Tag = "h2", className = "", children }) => (
-  <Tag className={`font-head-lux text-[44px] leading-[0.98] text-ink-primary sm:text-[68px] [&_em]:not-italic [&_em]:text-inherit ${className}`}>{children}</Tag>
+  <Tag className={`font-head-lux text-[40px] leading-[1.04] text-ink-primary sm:text-[60px] [&_em]:italic [&_em]:text-accent ${className}`}>{children}</Tag>
 );
 
 const base = "group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[13px] font-medium uppercase tracking-[0.14em] transition-colors";
 export function Btn({ as: Tag = "button", variant = "gold", className = "", children, arrow = true, ...p }) {
-  const v = variant === "gold" ? "bg-btn text-btn-foreground hover:bg-btn-hover" : variant === "light" ? "bg-white text-ink-primary hover:bg-surface-2" : "border border-ink-primary/30 text-ink-primary hover:border-ink-primary hover:bg-ink-primary hover:text-white";
+  const v = variant === "gold" ? "bg-gold text-[#3d2905] shadow-[0_8px_22px_-10px_rgba(148,108,20,0.7)] hover:brightness-105" : variant === "light" ? "bg-white/90 text-ink-primary hover:bg-white" : "border border-accent/60 text-accent hover:border-accent hover:bg-accent hover:text-white";
   return (
     <Tag {...p} className={`${base} ${v} ${className}`}>
       {children}
