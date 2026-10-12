@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download, Mail, Plus, Printer, Trash2 } from "lucide-react";
+import { Download, Mail, MessageCircle, Plus, Printer, Trash2 } from "lucide-react";
 import { api, errMsg, openFile } from "../../lib/api";
 import { fmtDateTime, money, moneyExact } from "../../lib/format";
-import { Receipt } from "../../components/Documents";
-import { Badge, Button, DataTable, ErrorNote, Field, Input, Modal, PageTitle, Panel, Select, Spinner } from "../../components/ui";
+import { Receipt, printSheet } from "../../components/Documents";
+import { FillPage, Badge, Button, DataTable, ErrorNote, Field, Input, Modal, PageTitle, Panel, SearchSelect, Select, Spinner } from "../../components/ui";
 
 export default function Billing() {
   const [params, setParams] = useSearchParams();
@@ -12,6 +12,7 @@ export default function Billing() {
   const [creating, setCreating] = useState(!!params.get("booking"));
   const [viewing, setViewing] = useState(null);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   const load = () => api.get("/invoices").then((r) => setInvoices(r.data)).catch((e) => setError(errMsg(e)));
   useEffect(() => { load(); }, []);
@@ -19,12 +20,15 @@ export default function Billing() {
   const closeCreate = () => { setCreating(false); if (params.get("booking")) setParams({}); };
 
   if (!invoices) return <Spinner />;
+  const q = search.trim().toLowerCase();
+  const shown = q ? invoices.filter((i) => `${i.invoice_no} ${i.customer?.name || ""} ${i.customer?.phone || ""} ${i.customer?.email || ""} ${i.payment_method} ${i.staff?.name || ""} ${(i.items || []).map((x) => x.name).join(" ")}`.toLowerCase().includes(q)) : invoices;
   return (
-    <>
+    <FillPage>
       <PageTitle title="Billing" subtitle="Invoices, e-bills and receipts" actions={<Button onClick={() => setCreating(true)}><Plus size={14} /> New invoice</Button>} />
       <ErrorNote>{error}</ErrorNote>
-      <Panel bodyClassName="">
-        <DataTable rows={invoices} onRowClick={setViewing} empty="No invoices yet." columns={[
+      <Panel fill>
+        <div className="shrink-0 border-b border-border p-3"><Input placeholder="Search invoice no., customer, phone, service or payment…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search invoices" /></div>
+        <DataTable rows={shown} onRowClick={setViewing} empty={q ? "No invoices match your search." : "No invoices yet."} columns={[
           { key: "invoice_no", header: "Invoice", render: (i) => <span className="font-medium">{i.invoice_no}</span> },
           { key: "customer", header: "Customer", render: (i) => i.customer?.name },
           { key: "date", header: "Date", render: (i) => fmtDateTime(i.created_at) },
@@ -34,7 +38,7 @@ export default function Billing() {
       </Panel>
       {creating && <InvoiceModal bookingId={params.get("booking")} onClose={closeCreate} onCreated={(inv) => { closeCreate(); load(); setViewing(inv); }} />}
       {viewing && <ReceiptModal invoice={viewing} onClose={() => setViewing(null)} />}
-    </>
+    </FillPage>
   );
 }
 
@@ -48,15 +52,33 @@ function ReceiptModal({ invoice, onClose }) {
     catch (e) { setMsg({ type: "err", text: errMsg(e) }); } finally { setSending(false); }
   };
 
+  // WhatsApp can't be given a file by a web link, so the message carries a secure link that opens the invoice PDF.
+  const whatsapp = async () => {
+    setMsg({ type: "", text: "" });
+    const win = window.open("", "_blank"); // opened right away so the browser doesn't block it as a popup
+    try {
+      const { data } = await api.post(`/invoices/${invoice.id}/share-link`, {});
+      const link = `${window.location.origin}/i/${data.code}`;
+      let phone = String(invoice.customer?.phone || "").replace(/\D/g, "").replace(/^0+/, "");
+      if (phone.length === 10) phone = `91${phone}`; // Indian mobile without country code
+      const text = `Hi ${invoice.customer?.name || ""}, thank you for visiting The Grooming Master!
+Your invoice ${invoice.invoice_no} (total ${moneyExact(invoice.total)}) is ready. Download the PDF here:
+${link}`;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+      if (win) win.location.href = url; else window.location.href = url;
+    } catch (e) { win?.close(); setMsg({ type: "err", text: errMsg(e) }); }
+  };
+
   return (
-    <Modal title={`Invoice ${invoice.invoice_no}`} onClose={onClose} wide>
+    <Modal title={`Invoice ${invoice.invoice_no}`} onClose={onClose} wide="a4">
       <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <Button variant="secondary" size="sm" onClick={() => window.print()}><Printer size={14} /> Print receipt</Button>
+        <Button variant="secondary" size="sm" onClick={() => printSheet()}><Printer size={14} /> Print receipt</Button>
         <Button variant="secondary" size="sm" onClick={() => openFile(`/invoices/${invoice.id}/pdf`, { download: `${invoice.invoice_no}.pdf` }).catch((e) => setMsg({ type: "err", text: errMsg(e) }))}><Download size={14} /> PDF</Button>
+        <Button variant="secondary" size="sm" onClick={whatsapp} title={invoice.customer?.phone ? "" : "No phone on file - you'll pick the contact in WhatsApp"}><MessageCircle size={14} className="text-success" /> Share on WhatsApp</Button>
         <Button size="sm" disabled={sending || !invoice.customer?.email} title={invoice.customer?.email ? "" : "Customer has no email on file"} onClick={email}><Mail size={14} /> {sending ? "Sending…" : "Email e-bill"}</Button>
       </div>
       {msg.text && (msg.type === "err" ? <ErrorNote>{msg.text}</ErrorNote> : <div role="status" className="mb-3 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">{msg.text}</div>)}
-      <div className="max-h-[65vh] overflow-y-auto rounded-md bg-surface-2 p-4"><Receipt invoice={invoice} /></div>
+      <div className="max-h-[72vh] overflow-y-auto rounded-md bg-surface-2 p-3 sm:p-4"><Receipt invoice={invoice} /></div>
     </Modal>
   );
 }
@@ -78,7 +100,7 @@ function InvoiceModal({ bookingId, onClose, onCreated }) {
         const bk = b?.data.find((x) => x.id === bookingId);
         if (bk) { // prefill from the booking being completed
           setForm((f) => ({ ...f, customer_id: bk.customer_id, staff_id: bk.staff_id || "" }));
-          setItems([{ name: bk.service.name, price: Number(bk.service.price), qty: 1 }]);
+          setItems(bk.services.map((x) => ({ name: x.name, price: Number(x.price), qty: 1 }))); // one line per service in the booking
         }
       }).catch((e) => setError(errMsg(e)));
   }, [bookingId]);
@@ -108,7 +130,7 @@ function InvoiceModal({ bookingId, onClose, onCreated }) {
       <form onSubmit={submit} className="space-y-4">
         <ErrorNote>{error}</ErrorNote>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Customer"><Select required value={form.customer_id} onChange={set("customer_id")}><option value="">Select…</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ""}</option>)}</Select></Field>
+          <Field label="Customer"><SearchSelect required value={form.customer_id} onChange={(v) => setForm((f) => ({ ...f, customer_id: v }))} options={customers.map((c) => ({ value: c.id, label: c.name, sub: c.phone }))} placeholder="Select customer…" searchPlaceholder="Search name or phone…" ariaLabel="Customer" /></Field>
           <Field label="Served by"><Select value={form.staff_id} onChange={set("staff_id")}><option value="">Me</option>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
         </div>
 

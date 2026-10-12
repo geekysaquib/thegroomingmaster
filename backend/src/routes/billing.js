@@ -1,13 +1,15 @@
 import { Router } from "express";
-import nodemailer from "nodemailer";
 import { supabase, unwrap } from "../supabase.js";
 import { requireAuth, requireRole, wrap, STAFF_ROLES } from "../middleware.js";
 import { invoicePdf } from "../lib/pdf.js";
+import { makeInvoiceCode } from "../lib/shortlink.js";
+import { mailEnabled, notifyInvoice, sendMailStrict } from "../lib/mailer.js";
 
 const router = Router();
+
 router.use(requireAuth);
 
-const SELECT = "*, customer:users!invoices_customer_id_fkey(id, name, email, phone), staff:users!invoices_staff_id_fkey(id, name)";
+const SELECT = "*, customer:users!invoices_customer_id_fkey(id, name, email, phone), staff:users!invoices_staff_id_fkey(id, name, email)";
 const round = (n) => Math.round(n * 100) / 100;
 
 // Customers can read their own invoices; everything else is staff-only.
@@ -37,6 +39,7 @@ router.post("/", requireRole(...STAFF_ROLES), wrap(async (req, res) => {
   };
   const invoice = unwrap(await supabase.from("invoices").insert(row).select(SELECT).single());
   if (booking_id) unwrap(await supabase.from("bookings").update({ status: "completed" }).eq("id", booking_id));
+  await notifyInvoice(invoice); // e-bill to the customer, copy to admin + the stylist
   res.status(201).json(invoice);
 }));
 
@@ -47,6 +50,12 @@ async function loadInvoice(req) {
   }
   return inv;
 }
+
+// Short code for "Share on WhatsApp"; the frontend builds <origin>/i/<code> (served by app.js).
+router.post("/:id/share-link", requireRole(...STAFF_ROLES), wrap(async (req, res) => {
+  const inv = await loadInvoice(req);
+  res.json({ code: makeInvoiceCode(inv.id) });
+}));
 
 // PDF download / print-friendly receipt.
 router.get("/:id/pdf", wrap(async (req, res) => {
@@ -62,15 +71,9 @@ router.post("/:id/email", requireRole(...STAFF_ROLES), wrap(async (req, res) => 
   const inv = await loadInvoice(req);
   const to = req.body.to || inv.customer?.email;
   if (!to) return res.status(400).json({ error: "This customer has no email address" });
-  if (!process.env.SMTP_HOST) return res.status(500).json({ error: "Email is not configured (set SMTP_* in backend/.env)" });
-
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587),
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-  });
-  await transport.sendMail({
-    from: process.env.MAIL_FROM || process.env.SMTP_USER, to,
-    subject: `Your invoice ${inv.invoice_no} - The Grooming Master`,
+  if (!(await mailEnabled())) return res.status(400).json({ error: "Email sending is switched off. An admin can turn it on under Settings > Email." });
+  await sendMailStrict({
+    to, subject: `Your invoice ${inv.invoice_no} - The Grooming Master`,
     text: `Hi ${inv.customer?.name || ""},\n\nThank you for visiting The Grooming Master. Your invoice ${inv.invoice_no} (total Rs. ${inv.total}) is attached.\n`,
     attachments: [{ filename: `${inv.invoice_no}.pdf`, content: await invoicePdf(inv, inv.customer) }],
   });

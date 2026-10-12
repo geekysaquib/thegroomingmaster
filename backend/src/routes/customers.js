@@ -6,7 +6,7 @@ const router = Router();
 router.use(requireAuth, requireRole(...STAFF_ROLES));
 
 router.get("/", wrap(async (req, res) => {
-  let q = supabase.from("users").select("id, name, email, phone, gender, created_at, password_hash")
+  let q = supabase.from("users").select("id, name, email, phone, gender, created_at, active, password_hash")
     .eq("role", "customer").order("created_at", { ascending: false });
   // Strip PostgREST filter syntax characters so a search term can't inject extra conditions.
   const term = String(req.query.search || "").replace(/[,()%*\\]/g, " ").trim();
@@ -21,6 +21,14 @@ router.post("/", wrap(async (req, res) => {
   if (!name) return res.status(400).json({ error: "Name is required" });
   const row = { name, phone, gender, role: "customer", email: email ? email.toLowerCase() : null };
   res.status(201).json(unwrap(await supabase.from("users").insert(row).select("id, name, email, phone, gender").single()));
+}));
+
+// Admin-only: block / unblock a customer. A blocked customer is signed out at once and can't log in or register again.
+router.patch("/:id/block", requireRole("admin"), wrap(async (req, res) => {
+  if (typeof req.body.blocked !== "boolean") return res.status(400).json({ error: "blocked must be true or false" });
+  const rows = unwrap(await supabase.from("users").update({ active: !req.body.blocked }).eq("id", req.params.id).eq("role", "customer").select("id, name, active"));
+  if (!rows.length) return res.status(404).json({ error: "Customer not found" });
+  res.json(rows[0]);
 }));
 
 // Admin-only CSV export of the whole customer base with lifetime spend / visits.

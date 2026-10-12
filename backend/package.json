@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "seed:admin": "node src/seed-admin.js"
+    "seed:admin": "node src/seed-admin.js",
+    "seed:developer": "node src/seed-developer.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",

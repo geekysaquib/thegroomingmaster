@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, Mail, Phone, UserPen } from "lucide-react";
 import Avatar from "./Avatar";
 import ProfileModal from "./ProfileModal";
 
-const ROLE_LABEL = { admin: "Salon admin", staff: "Salon staff", customer: "Customer" };
+const ROLE_LABEL = { developer: "Developer", admin: "Salon admin", staff: "Salon staff", customer: "Customer" };
 
 /** Top-bar profile popup: avatar button -> card with details, Edit profile and Sign out. */
 export default function ProfileMenu({ user, onSignOut }) {
@@ -29,7 +29,7 @@ export default function ProfileMenu({ user, onSignOut }) {
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-surface-1 shadow-2xl">
+        <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-border bg-surface-1 shadow-2xl">
           <div className="flex items-center gap-3 border-b border-border bg-surface-2 p-4">
             <Avatar user={user} size={56} />
             <div className="min-w-0">

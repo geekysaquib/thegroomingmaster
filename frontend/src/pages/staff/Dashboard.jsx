@@ -5,6 +5,7 @@ import { CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, Printer, Receip
 import { api, errMsg } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { fmtTime, money } from "../../lib/format";
+import { fromSalon, toSalon } from "../../lib/salonTime";
 import Avatar from "../../components/Avatar";
 import WelcomeBanner from "../../components/WelcomeBanner";
 import { Button, EmptyState, ErrorNote, Skeleton } from "../../components/ui";
@@ -46,16 +47,14 @@ function Delta({ cur, prev, className = "" }) {
   return <span className={className}>{pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}% vs previous</span>;
 }
 
-function KpiCard({ label, value, format = (v) => v, icon: Icon, sub, tone }) {
+function KpiCard({ label, value, format = (v) => v, icon: Icon, sub }) {
   const shown = useCountUp(value);
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm ${tone}`}>
-      <div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-8 h-32 w-32 rounded-full bg-white/10" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-10 right-6 h-24 w-24 rounded-full bg-black/5" />
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/25"><Icon size={18} /></span>
-      <div className="relative mt-3 text-3xl font-semibold leading-none tracking-tight">{format(shown)}</div>
-      <div className="relative mt-1.5 text-sm font-medium opacity-90">{label}</div>
-      <div className="relative mt-1 text-xs opacity-80">{sub}</div>
+    <div className="rounded-2xl border border-border bg-surface-1 p-4">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-3 text-ink-primary"><Icon size={18} /></span>
+      <div className="mt-3 text-3xl font-semibold leading-none tracking-tight text-ink-primary">{format(shown)}</div>
+      <div className="mt-1.5 text-sm font-medium text-ink-secondary">{label}</div>
+      <div className="mt-1 text-xs text-ink-muted">{sub}</div>
     </div>
   );
 }
@@ -73,12 +72,12 @@ function StatTile({ label, value, children, to }) {
 
 function Card({ title, subtitle, actions, children, className = "" }) {
   return (
-    <section className={`rounded-2xl border border-border bg-surface-1 ${className}`}>
+    <section className={`flex flex-col rounded-2xl border border-border bg-surface-1 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-2 px-4 pt-4">
         <div><h2 className="text-[15px] font-semibold text-ink-primary">{title}</h2>{subtitle && <p className="text-xs text-ink-muted">{subtitle}</p>}</div>
         {actions && <div className="flex items-center gap-1.5">{actions}</div>}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="flex-1 p-4">{children}</div>
     </section>
   );
 }
@@ -212,9 +211,9 @@ function Upcoming({ date, setDate, bookings, pending, now, onOpen }) {
   const weekStart = addDays(startOfDay(date), -date.getDay()); // Sunday-first strip like the design
   const list = bookings.filter((b) => b.status !== "cancelled").sort((a, b) => a.start_at.localeCompare(b.start_at));
   return (
-    <aside aria-label="Upcoming appointments" className="rounded-2xl border border-border bg-surface-1">
+    <aside aria-label="Upcoming appointments" className="flex flex-col rounded-2xl border border-border bg-surface-1">
       <div className="border-b border-border px-4 py-3.5"><h2 className="text-[15px] font-semibold text-ink-primary">Upcoming appointments</h2></div>
-      <div className="p-4">
+      <div className="flex flex-1 flex-col p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-medium text-ink-primary">{date.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</span>
           <div className="flex gap-1">
@@ -239,7 +238,7 @@ function Upcoming({ date, setDate, bookings, pending, now, onOpen }) {
             <span>{pending} booking request{pending > 1 ? "s" : ""} waiting for you</span><ChevronRight size={14} />
           </Link>
         )}
-        <ul className="mt-3 max-h-[520px] space-y-2.5 overflow-y-auto">
+        <ul className="mt-3 max-h-[520px] flex-1 space-y-2.5 overflow-y-auto xl:max-h-none">
           {list.length === 0 && <li><EmptyState hint="No appointments on this day." /></li>}
           {list.map((b) => (
             <li key={b.id}>
@@ -265,18 +264,18 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [days, setDays] = useState(30);
   const [staffId, setStaffId] = useState("");
-  const [date, setDate] = useState(() => startOfDay(new Date()));
+  const [date, setDate] = useState(() => startOfDay(toSalon(new Date())));
   const [tab, setTab] = useState("revenue");
   const [svcMetric, setSvcMetric] = useState("revenue");
   const [data, setData] = useState(null);
   const [dayBookings, setDayBookings] = useState([]);
   const [staff, setStaff] = useState([]);
   const [tick, setTick] = useState(0);
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => toSalon(new Date()));
   const [error, setError] = useState("");
   const jumpRef = useRef(null);
 
-  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setNow(toSalon(new Date())), 60000); return () => clearInterval(t); }, []);
   useEffect(() => { api.get("/staff").then((r) => setStaff(r.data.filter((s) => s.active !== false))).catch(() => {}); }, []);
 
   useEffect(() => {
@@ -289,7 +288,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     let live = true;
-    api.get("/bookings", { params: { from: startOfDay(date).toISOString(), to: addDays(startOfDay(date), 1).toISOString() } })
+    api.get("/bookings", { params: { from: fromSalon(startOfDay(date)).toISOString(), to: fromSalon(addDays(startOfDay(date), 1)).toISOString() } })
       .then((r) => live && setDayBookings(r.data)).catch(() => {});
     return () => { live = false; };
   }, [date, tick]);
@@ -320,7 +319,7 @@ export default function Dashboard() {
           </select>
           <div className="flex items-center rounded-xl border border-border bg-surface-1">
             <button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day" className="px-2.5 py-2 text-ink-secondary hover:bg-surface-3"><ChevronLeft size={15} /></button>
-            <button onClick={() => setDate(startOfDay(new Date()))} className="border-x border-border px-3 py-2 text-[13px] font-medium text-ink-primary hover:bg-surface-3">Today</button>
+            <button onClick={() => setDate(startOfDay(toSalon(new Date())))} className="border-x border-border px-3 py-2 text-[13px] font-medium text-ink-primary hover:bg-surface-3">Today</button>
             <button onClick={() => setDate(addDays(date, 1))} aria-label="Next day" className="px-2.5 py-2 text-ink-secondary hover:bg-surface-3"><ChevronRight size={15} /></button>
           </div>
           <div className="relative">
@@ -338,24 +337,24 @@ export default function Dashboard() {
       </div>
 
       <WelcomeBanner user={user} message={data ? pendingTxt : "Loading your salon's numbers…"}>
-        <Button variant="gold" onClick={() => navigate("/salon/new-booking")}><CalendarPlus size={15} /> New booking</Button>
-        <Button variant="glass" onClick={() => navigate("/salon/billing")}><Receipt size={15} /> New invoice</Button>
-        <Button variant="glass" onClick={() => navigate("/salon/customers")}><UserPlus size={15} /> Add client</Button>
+        <Button variant="primary" onClick={() => navigate("/salon/new-booking")}><CalendarPlus size={15} /> New booking</Button>
+        <Button variant="secondary" onClick={() => navigate("/salon/billing")}><Receipt size={15} /> New invoice</Button>
+        <Button variant="secondary" onClick={() => navigate("/salon/customers")}><UserPlus size={15} /> Add client</Button>
       </WelcomeBanner>
 
       <ErrorNote>{error}</ErrorNote>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="min-w-0 space-y-4">
+        <div className="flex min-w-0 flex-col gap-4">
           {/* Overview */}
           <section aria-label="Overview">
             <div className="mb-2 flex items-center justify-between"><h2 className="text-[15px] font-semibold text-ink-primary">Overview</h2><span className="text-xs text-ink-muted">{rangeLabel}</span></div>
             {!data ? <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[140px] rounded-2xl" />)}</div> : (
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <KpiCard label="Total clients" value={t.customersTotal} icon={Users} tone="bg-gradient-to-br from-[#e0c98f] to-[#b8964f] text-[#1f1a0d]" sub={`+${t.newCustomers} new in this period`} />
-                <KpiCard label="Appointments" value={t.bookings} icon={CalendarCheck} tone="bg-gradient-to-br from-[#2cc3ae] to-[#168f7e] text-white" sub={<Delta cur={t.bookings} prev={prev.bookings} />} />
-                <KpiCard label="Services on menu" value={t.activeServices} icon={Scissors} tone="bg-gradient-to-br from-[#4d8dff] to-[#2358d8] text-white" sub="Active services" />
-                <KpiCard label="Revenue" value={t.revenue} format={money} icon={Wallet} tone="bg-gradient-to-br from-[#ff9a4d] to-[#e5651a] text-white" sub={<Delta cur={t.revenue} prev={prev.revenue} />} />
+                <KpiCard label="Total clients" value={t.customersTotal} icon={Users} sub={`+${t.newCustomers} new in this period`} />
+                <KpiCard label="Appointments" value={t.bookings} icon={CalendarCheck} sub={<Delta cur={t.bookings} prev={prev.bookings} />} />
+                <KpiCard label="Services on menu" value={t.activeServices} icon={Scissors} sub="Active services" />
+                <KpiCard label="Revenue" value={t.revenue} format={money} icon={Wallet} sub={<Delta cur={t.revenue} prev={prev.revenue} />} />
               </div>
             )}
             {data && (
@@ -371,8 +370,8 @@ export default function Dashboard() {
           <div className="grid gap-4 min-[1500px]:grid-cols-2">
             <DaySchedule date={date} bookings={dayRows} staff={scheduleStaff} now={now} onStep={(n) => setDate(addDays(date, n))} onOpen={openBooking} />
 
-            <div className="space-y-4">
-              <Card title="Statistics" subtitle={`${rangeLabel} · hover the chart for details`} actions={<Tabs label="Statistic" value={tab} onChange={setTab} tabs={[["revenue", "Revenue"], ["bookings", "Appointments"], ["customers", "Clients"]]} />}>
+            <div className="flex flex-col gap-4">
+              <Card className="flex-1" title="Statistics" subtitle={`${rangeLabel} · hover the chart for details`} actions={<Tabs label="Statistic" value={tab} onChange={setTab} tabs={[["revenue", "Revenue"], ["bookings", "Appointments"], ["customers", "Clients"]]} />}>
                 {!data ? <Skeleton className="h-60" /> : !hasValue(data.series, seriesView.key) ? <EmptyState /> : (
                   <>
                     {peak && <p className="mb-2 text-xs text-ink-secondary">Peak: <span className="font-semibold text-ink-primary">{seriesView.fmt(peak[seriesView.key])}</span> on {peak.date}</p>}
@@ -392,7 +391,7 @@ export default function Dashboard() {
                 )}
               </Card>
 
-              <Card title="Revenue generation" subtitle="Last 6 months · revenue vs salary expenses">
+              <Card className="flex-1" title="Revenue generation" subtitle="Last 6 months · revenue vs salary expenses">
                 {!data ? <Skeleton className="h-60" /> : !(hasValue(data.monthly, "revenue") || hasValue(data.monthly, "expenses")) ? <EmptyState /> : (
                   <div className="h-60">
                     <ResponsiveContainer width="100%" height="100%">

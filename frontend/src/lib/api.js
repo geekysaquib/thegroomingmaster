@@ -10,15 +10,26 @@ export const tokenStore = {
 
 export const api = axios.create({ baseURL: "/api" });
 
+// Number of API calls currently in flight; the global loader subscribes to it.
+let pending = 0;
+const listeners = new Set();
+const setPending = (delta) => { pending = Math.max(0, pending + delta); listeners.forEach((l) => l()); };
+export const pendingRequests = {
+  subscribe: (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
+  getSnapshot: () => pending,
+};
+
 api.interceptors.request.use((config) => {
+  setPending(1);
   const t = tokenStore.get();
   if (t) config.headers.Authorization = `Bearer ${t}`;
   return config;
-});
+}, (err) => { setPending(-1); return Promise.reject(err); });
 
 api.interceptors.response.use(
-  (r) => r,
+  (r) => { setPending(-1); return r; },
   (err) => {
+    setPending(-1);
     // Expired/invalid session on an authenticated call: drop it and let the auth context redirect.
     if (err.response?.status === 401 && tokenStore.get() && !err.config.url.startsWith("/auth/login")) {
       tokenStore.clear();

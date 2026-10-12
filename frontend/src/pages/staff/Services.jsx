@@ -1,8 +1,9 @@
+import { useConfirm } from "../../components/ConfirmDialog";
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { api, errMsg } from "../../lib/api";
 import { SECTIONS, categoryLabel, priceLabel } from "../../lib/format";
-import { Badge, Button, DataTable, ErrorNote, Field, Input, Modal, PageTitle, Panel, Select, Textarea } from "../../components/ui";
+import { FillPage, Badge, Button, DataTable, ErrorNote, Field, Input, Modal, PageTitle, Panel, Select, Textarea } from "../../components/ui";
 
 const EMPTY = { name: "", section: "Hair Care", category: "unisex", description: "", price: "", price_type: "fixed", duration_min: 30, sort_order: 999, active: true };
 
@@ -10,22 +11,27 @@ export default function Services() {
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null); // service object or EMPTY (new)
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [confirm, confirmDialog] = useConfirm();
+  const q = search.trim().toLowerCase();
+  const filtered = q ? rows.filter((s) => `${s.name} ${s.section} ${categoryLabel[s.category] || ""} ${s.description || ""}`.toLowerCase().includes(q)) : rows;
 
   const load = () => api.get("/services", { params: { all: 1 } }).then((r) => setRows(r.data)).catch((e) => setError(errMsg(e)));
   useEffect(() => { load(); }, []);
 
   const remove = async (s) => {
-    if (!window.confirm(`Delete "${s.name}"? If it has bookings or invoices it will be archived instead.`)) return;
+    if (!(await confirm({ title: "Delete service?", danger: true, confirmLabel: "Delete", message: `"${s.name}" will be deleted. If it has bookings or invoices it will be archived instead (hidden from customers).` }))) return;
     try { const { data } = await api.delete(`/services/${s.id}`); if (data.archived) setError(`"${s.name}" has history, so it was archived (hidden from customers).`); load(); }
     catch (e) { setError(errMsg(e)); }
   };
 
   return (
-    <>
+    <FillPage>
       <PageTitle title="Services" subtitle="What customers can book" actions={<Button onClick={() => setEditing(EMPTY)}><Plus size={14} /> Add service</Button>} />
       <ErrorNote>{error}</ErrorNote>
-      <Panel bodyClassName="">
-        <DataTable rows={rows} columns={[
+      <Panel fill>
+        <div className="shrink-0 border-b border-border p-3"><Input placeholder="Search service, section or category…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search services" /></div>
+        <DataTable rows={filtered} empty="No services found." columns={[
           { key: "name", header: "Service", render: (s) => <span className="font-medium">{s.name}</span> },
           { key: "section", header: "Section" },
           { key: "category", header: "For", render: (s) => categoryLabel[s.category] },
@@ -39,8 +45,9 @@ export default function Services() {
             </div>) },
         ]} />
       </Panel>
+      {confirmDialog}
       {editing && <ServiceModal service={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
-    </>
+    </FillPage>
   );
 }
 

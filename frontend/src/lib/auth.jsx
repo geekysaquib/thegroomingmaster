@@ -4,7 +4,9 @@ import { api, tokenStore } from "./api";
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-export const isStaffRole = (role) => role === "staff" || role === "admin";
+export const isStaffRole = (role) => role === "staff" || role === "admin" || role === "developer";
+/** Admin-level access: salon admins and the developer (god mode). */
+export const isAdminRole = (role) => role === "admin" || role === "developer";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

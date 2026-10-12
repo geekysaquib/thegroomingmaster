@@ -2,6 +2,7 @@ import { Router } from "express";
 import { supabase, unwrap } from "../supabase.js";
 import { requireAuth, requireRole, wrap, STAFF_ROLES } from "../middleware.js";
 import { salarySlipPdf } from "../lib/pdf.js";
+import { notifySalaryPaid } from "../lib/mailer.js";
 
 const router = Router();
 router.use(requireAuth, requireRole(...STAFF_ROLES));
@@ -58,7 +59,9 @@ router.patch("/:id", requireRole("admin"), wrap(async (req, res) => {
   for (const k of ["base", "bonus", "deductions"]) if (req.body[k] !== undefined) next[k] = Number(req.body[k]);
   const patch = { base: next.base, bonus: next.bonus, deductions: next.deductions, net: round(next.base + Number(cur.commission) + next.bonus - next.deductions) };
   if (req.body.status === "paid" && cur.status !== "paid") Object.assign(patch, { status: "paid", paid_at: new Date().toISOString() });
-  res.json(unwrap(await supabase.from("salaries").update(patch).eq("id", req.params.id).select(SELECT).single()));
+  const updated = unwrap(await supabase.from("salaries").update(patch).eq("id", req.params.id).select(SELECT).single());
+  if (patch.status === "paid") await notifySalaryPaid(updated);
+  res.json(updated);
 }));
 
 router.get("/:id/pdf", wrap(async (req, res) => {

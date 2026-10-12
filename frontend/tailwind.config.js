@@ -2,7 +2,7 @@
 // Wraps a CSS variable so Tailwind opacity modifiers (bg-success/15) work via color-mix.
 const v = (name) => ({ opacityValue }) =>
   opacityValue === undefined || opacityValue === "1" || String(opacityValue).startsWith("var(") ? `var(${name})` : `color-mix(in srgb, var(${name}) ${Number(opacityValue) * 100}%, transparent)`;
-// Tokens mirror monoZHubUI-Core (tailwind.config.js + app.css): Inter, surface-0..3 scale, blue accent,
+// Tokens mirror monoZHubUI-Core (tailwind.config.js + app.css): Google Sans, surface-0..3 scale, blue accent,
 // dark default with a light mode toggled via [data-mode].
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "DM Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        sans: ["Google Sans", "DM Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
       },
       colors: {
         background: v("--background"),

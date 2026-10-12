@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-// The Grooming Master crest: crowned shield, CM monogram, scissors and laurel branches,
+// The Grooming Master crest: crowned shield, GM monogram, scissors and laurel branches,
 // redrawn as SVG from the salon's price-list artwork.
 
 function laurelLeaves() {
@@ -29,6 +29,21 @@ export default function Logo({ variant = "crest", className = "", title = "The G
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const gold = `gold${uid}`, dark = `dark${uid}`;
   const viewBox = variant === "crest" ? "0 14 300 190" : "100 16 100 176";
+
+  // Compact badge for tiny spots (sidebar rail): gold ring with a GM monogram in the current text colour.
+  if (variant === "badge") {
+    return (
+      <svg viewBox="0 0 64 64" className={className} role="img" aria-label={title} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id={gold} x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stopColor="#f8e9ae" /><stop offset="0.4" stopColor="#d9b04a" /><stop offset="1" stopColor="#8a6410" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="29" fill="none" stroke={`url(#${gold})`} strokeWidth="3" />
+        <text x="32" y="41.5" textAnchor="middle" fontFamily="'Google Sans', 'DM Sans', sans-serif" fontWeight="700" fontSize="26" fill="currentColor">GM</text>
+      </svg>
+    );
+  }
 
   const laurel = (
     <g>
@@ -69,8 +84,8 @@ export default function Logo({ variant = "crest", className = "", title = "The G
       <path d="M103 70 H197 V128 C197 158 177 177 150 190 C123 177 103 158 103 128 Z" fill={`url(#${dark})`} stroke={`url(#${gold})`} strokeWidth="4" strokeLinejoin="round" />
       <path d="M110 77 H190 V128 C190 153 173 169 150 181 C127 169 110 153 110 128 Z" fill="none" stroke={`url(#${gold})`} strokeWidth="1.2" />
 
-      {/* CM monogram */}
-      <text x="150" y="130" textAnchor="middle" fontFamily="Cinzel, 'Cormorant Garamond', Georgia, serif" fontWeight="700" fontSize="46" letterSpacing="-7" fill={`url(#${gold})`}>CM</text>
+      {/* GM monogram */}
+      <text x="150" y="130" textAnchor="middle" fontFamily="Cinzel, 'Cormorant Garamond', Georgia, serif" fontWeight="700" fontSize="46" letterSpacing="-6" fill={`url(#${gold})`}>GM</text>
 
       {/* Scissors */}
       <g stroke={`url(#${gold})`} strokeWidth="2.2" strokeLinecap="round" fill="none">

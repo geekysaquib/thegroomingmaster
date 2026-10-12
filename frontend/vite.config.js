@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: { '/api': process.env.API_URL || 'http://localhost:4000' },
+    proxy: {
+      '/api': process.env.API_URL || 'http://localhost:4000',
+      '^/i/': process.env.API_URL || 'http://localhost:4000', // short invoice links
+    },
   },
 })

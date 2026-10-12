@@ -24,7 +24,8 @@ router.post("/register", wrap(async (req, res) => {
   if (!name || !email || !password) return res.status(400).json({ error: "Name, email and password are required" });
   if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
 
-  const existing = unwrap(await supabase.from("users").select("id, password_hash").eq("email", email.toLowerCase()));
+  const existing = unwrap(await supabase.from("users").select("id, password_hash, active").eq("email", email.toLowerCase()));
+  if (existing[0] && !existing[0].active) return res.status(403).json({ error: "This account has been blocked. Please contact the salon." });
   const password_hash = await bcrypt.hash(password, 10);
 
   let user;
@@ -45,10 +46,12 @@ router.post("/register", wrap(async (req, res) => {
 // One login endpoint; `audience` keeps the customer and staff portals from accepting each other's accounts.
 router.post("/login", wrap(async (req, res) => {
   const { email, password, audience } = req.body;
-  const rows = unwrap(await supabase.from("users").select("*").eq("email", (email || "").toLowerCase()).eq("active", true));
+  const rows = unwrap(await supabase.from("users").select("*").eq("email", (email || "").toLowerCase()));
   const user = rows[0];
   const ok = user?.password_hash && (await bcrypt.compare(password || "", user.password_hash));
   if (!ok) return res.status(401).json({ error: "Invalid email or password" });
+  // Only revealed after the password checks out, so this can't be used to discover which emails exist.
+  if (!user.active) return res.status(403).json({ error: user.role === "customer" ? "Your account has been blocked. Please contact the salon." : "This account has been deactivated. Please contact the salon admin." });
 
   const isStaff = user.role !== "customer";
   if (audience === "staff" && !isStaff) return res.status(403).json({ error: "This is not a staff account" });

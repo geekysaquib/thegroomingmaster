@@ -24,6 +24,13 @@
   status = 200
   force = true
 
+# Short public invoice links (/i/<code>) -> the same Express function.
+[[redirects]]
+  from = "/i/*"
+  to = "/.netlify/functions/api/i/:splat"
+  status = 200
+  force = true
+
 # Single-page app fallback: every other path (/login, /salon/calendar, /contact ...) serves index.html
 # so React Router can handle it on refresh / direct links instead of Netlify's "Page not found".
 [[redirects]]

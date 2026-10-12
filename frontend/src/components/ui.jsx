@@ -1,19 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Inbox, X, XCircle, Clock3, Info } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Inbox, X, XCircle, Clock3, Info } from "lucide-react";
 
 // Primitives styled after the monoZHub console (Panel, MetricCard, TanStack-style table, status badges).
 
-export function Panel({ title, actions, className = "", bodyClassName = "p-4", children }) {
+/** Page wrapper for table pages: fills the content area so the table panel can stretch to the bottom. */
+export function FillPage({ children }) {
+  return <div className="flex h-full min-h-[360px] flex-col">{children}</div>;
+}
+
+/** `fill`: stretch to the remaining height of a FillPage (used with DataTable, which then scrolls inside). */
+export function Panel({ title, actions, className = "", bodyClassName, fill = false, children }) {
+  const body = bodyClassName ?? (fill ? "flex min-h-0 flex-1 flex-col" : "flex-1 p-4");
   return (
-    <div className={`overflow-hidden rounded-md border border-border bg-surface-1 ${className}`}>
+    <div className={`flex flex-col overflow-hidden rounded-md border border-border bg-surface-1 ${fill ? "min-h-0 flex-1" : ""} ${className}`}>
       {(title || actions) && (
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
           <div className="text-[13px] font-semibold text-ink-primary">{title}</div>
           {actions && <div className="flex items-center gap-1.5">{actions}</div>}
         </div>
       )}
-      <div className={bodyClassName}>{children}</div>
+      <div className={body}>{children}</div>
     </div>
   );
 }
@@ -51,12 +58,10 @@ const btn = {
   secondary: "border border-border bg-surface-1 text-ink-primary hover:bg-surface-3",
   danger: "bg-danger text-white hover:opacity-90",
   ghost: "text-ink-secondary hover:bg-surface-3",
-  gold: "bg-[#c9b182] text-[#1a1a1a] hover:bg-[#d8c498]",
-  glass: "border border-white/25 bg-white/10 text-white hover:bg-white/20",
 };
 
 export function Button({ variant = "primary", size = "md", className = "", ...props }) {
-  const sz = size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-[13px]";
+  const sz = size === "sm" ? "px-2 py-1.5 text-xs sm:py-1" : "px-3 py-2 text-[13px] sm:py-1.5"; // a little taller on touch screens
   return (
     <button {...props}
       className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-muted disabled:cursor-not-allowed disabled:opacity-50 ${sz} ${btn[variant]} ${className}`} />
@@ -76,6 +81,63 @@ export function Field({ label, children, hint }) {
 }
 export const Input = ({ className = "", ...p }) => <input {...p} className={`${field} ${className}`} />;
 export const Select = ({ className = "", children, ...p }) => <select {...p} className={`${field} ${className}`}>{children}</select>;
+/**
+ * Dropdown with a search box (for long lists such as customers). `options`: [{ value, label, sub? }]; `sub` is shown muted
+ * and is searchable too (e.g. a phone number). Works with the keyboard: type to filter, Up/Down, Enter to pick, Esc to close.
+ */
+export function SearchSelect({ options, value, onChange, placeholder = "Select…", searchPlaceholder = "Search…", required, ariaLabel, emptyText = "No matches" }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [hi, setHi] = useState(0);
+  const ref = useRef(null);
+  const selected = options.find((o) => o.value === value);
+  const term = q.trim().toLowerCase();
+  const list = term ? options.filter((o) => `${o.label} ${o.sub || ""}`.toLowerCase().includes(term)) : options;
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const choose = (o) => { onChange(o.value); setOpen(false); setQ(""); };
+  const onKey = (e) => {
+    if (e.key === "Escape") { e.nativeEvent.stopPropagation(); setOpen(false); } // don't also close a surrounding modal
+    else if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, list.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); if (list[hi]) choose(list[hi]); }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => { setOpen((o) => !o); setHi(0); }}
+        className={`${field} flex items-center justify-between gap-2 text-left`}>
+        <span className={`min-w-0 truncate ${selected ? "" : "text-ink-muted"}`}>{selected ? <>{selected.label}{selected.sub ? <span className="text-ink-muted"> · {selected.sub}</span> : null}</> : placeholder}</span>
+        <ChevronDown size={14} className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {/* Invisible field so the browser's native "please fill this field" check still works. */}
+      {required && <input tabIndex={-1} aria-hidden="true" required value={value || ""} onChange={() => {}} className="pointer-events-none absolute inset-0 h-full w-full opacity-0" />}
+      {open && (
+        <div onClick={(e) => e.preventDefault()} /* inside a <label>: stop it forwarding the click back to the button */ className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-border bg-surface-1 shadow-xl">
+          <div className="border-b border-border p-2">
+            <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setHi(0); }} onKeyDown={onKey} placeholder={searchPlaceholder} aria-label="Search options" className={field} />
+          </div>
+          <ul role="listbox" className="max-h-60 overflow-y-auto py-1">
+            {list.length === 0 && <li className="px-3 py-3 text-center text-xs text-ink-muted">{emptyText}</li>}
+            {list.map((o, i) => (
+              <li key={o.value} role="option" aria-selected={o.value === value} onMouseEnter={() => setHi(i)} onMouseDown={(e) => { e.preventDefault(); choose(o); }}
+                className={`cursor-pointer px-3 py-2 text-[13px] ${i === hi ? "bg-surface-3" : ""} ${o.value === value ? "font-semibold" : ""} text-ink-primary`}>
+                {o.label}{o.sub ? <span className="text-ink-muted"> · {o.sub}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const Textarea = ({ className = "", ...p }) => <textarea {...p} className={`${field} ${className}`} />;
 
 const tones = {
@@ -94,7 +156,7 @@ export function Badge({ tone = "neutral", children }) {
 
 export const statusTone = { booked: "info", completed: "success", cancelled: "danger", no_show: "warning", paid: "success", pending: "warning" };
 
-export function Modal({ title, onClose, children, wide }) {
+export function Modal({ title, onClose, children, wide }) { // wide: true = 3xl, "a4" = fits an A4 sheet
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -103,7 +165,7 @@ export function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()}
-        className={`w-full ${wide ? "max-w-3xl" : "max-w-md"} rounded-lg border border-border bg-surface-1 shadow-2xl`}>
+        className={`w-full ${wide === "a4" ? "max-w-[860px]" : wide ? "max-w-3xl" : "max-w-md"} rounded-lg border border-border bg-surface-1 shadow-2xl`}>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-ink-primary">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-ink-muted hover:bg-surface-3"><X size={16} /></button>
@@ -127,12 +189,41 @@ export function DataTable({ columns, rows, empty, onRowClick, pageSize: initialS
   const nav = "flex h-7 w-7 items-center justify-center text-ink-muted hover:bg-surface-3 disabled:opacity-40 disabled:hover:bg-transparent";
 
   return (
-    <div>
-      <div className="overflow-x-auto">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Phones: each row becomes a card (first column = title, the rest as label/value pairs, action buttons at the bottom). */}
+      <div className="min-h-0 flex-1 overflow-auto md:hidden">
+        {rows.length === 0 && <EmptyState hint={empty} />}
+        <ul className="divide-y divide-border">
+          {visible.map((r, i) => {
+            const [head, ...rest] = columns;
+            const fields = rest.filter((c) => c.header), actions = rest.filter((c) => !c.header);
+            const cell = (c) => (c.render ? c.render(r) : r[c.key]);
+            return (
+              <li key={r.id ?? i} onClick={onRowClick ? () => onRowClick(r) : undefined} className={`space-y-2 px-4 py-3 text-xs ${onRowClick ? "cursor-pointer active:bg-surface-2" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 text-[13px] font-medium text-ink-primary">{cell(head)}</div>
+                  {actions.length > 0 && <div className="flex shrink-0 items-center gap-1">{actions.map((c) => <div key={c.key}>{cell(c)}</div>)}</div>}
+                </div>
+                {fields.length > 0 && (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                    {fields.map((c) => (
+                      <div key={c.key} className="contents">
+                        <dt className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-muted">{c.header}</dt>
+                        <dd className="min-w-0 break-words text-right text-ink-primary">{cell(c)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="hidden min-h-0 flex-1 overflow-auto md:block">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-border bg-surface-2 text-[10px] uppercase tracking-[0.08em] text-ink-muted">
-              {columns.map((c) => <th key={c.key} className={`px-4 py-2.5 font-semibold ${c.className || ""}`}>{c.header}</th>)}
+              {columns.map((c) => <th key={c.key} className={`sticky top-0 z-[1] bg-surface-2 px-4 py-2.5 font-semibold ${c.className || ""}`}>{c.header}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -147,7 +238,7 @@ export function DataTable({ columns, rows, empty, onRowClick, pageSize: initialS
         </table>
       </div>
       {rows.length > 0 && (
-        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-ink-secondary">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2 text-xs text-ink-secondary">
           <label className="flex items-center gap-2">Show
             <select value={size} onChange={(e) => { setSize(Number(e.target.value)); setPage(1); }} className="rounded-md border border-border bg-surface-1 px-2 py-1 text-xs text-ink-primary">
               {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}

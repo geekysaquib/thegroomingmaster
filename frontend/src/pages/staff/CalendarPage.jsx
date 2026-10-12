@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, List, Plus } from "lucide-react";
 import { api, errMsg } from "../../lib/api";
 import { fmtDateTime, fmtTime, money, toLocalInput } from "../../lib/format";
-import { useAuth } from "../../lib/auth";
+import { SALON_TZ, fromSalon, toSalon } from "../../lib/salonTime";
+import { isAdminRole, useAuth } from "../../lib/auth";
+import { useConfirm } from "../../components/ConfirmDialog";
 import Avatar from "../../components/Avatar";
 import { Button, DataTable, EmptyState, ErrorNote, Field, Input, Modal, Select } from "../../components/ui";
 
@@ -21,7 +23,7 @@ const startOfWeek = (d) => addDays(startOfDay(d), -((d.getDay() + 6) % 7)); // M
 const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 const hourLabel = (h) => `${String(h % 12 || 12).padStart(2, "0")}:00 ${h < 12 ? "AM" : "PM"}`;
-const gmtLabel = () => { const o = -new Date().getTimezoneOffset(); const a = Math.abs(o); return `GMT${o < 0 ? "-" : "+"}${Math.floor(a / 60)}${a % 60 ? ":" + String(a % 60).padStart(2, "0") : ""}`; };
+const gmtLabel = () => new Intl.DateTimeFormat("en-US", { timeZone: SALON_TZ, timeZoneName: "shortOffset" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName")?.value.replace("GMT", "GMT") || "IST";
 
 const tint = (status) => ({ background: `var(--ev-${status}-bg)` });
 const solid = (status) => ({ background: `var(--ev-${status}-pill)` });
@@ -32,7 +34,7 @@ export function StatusPill({ status, className = "" }) {
 
 /** Side-by-side layout for overlapping bookings within one day. */
 export function layoutDay(items) {
-  const sorted = items.map((b) => ({ b, s: +new Date(b.start_at), e: +new Date(b.end_at) })).sort((x, y) => x.s - y.s);
+  const sorted = items.map((b) => ({ b, s: +toSalon(b.start_at), e: +toSalon(b.end_at) })) /* salon wall-clock, see lib/salonTime */.sort((x, y) => x.s - y.s);
   const out = [];
   let cluster = [], clusterEnd = -Infinity;
   const flush = () => {
@@ -100,7 +102,7 @@ function TimeGrid({ days, bookings, now, onOpen, onPickDay, selected }) {
           {days.map((d) => (
             <div key={d.toISOString()} className="relative border-l border-border">
               {HOURS.map((h) => <div key={h} style={{ height: ROW }} className="border-b border-border/60" />)}
-              {layoutDay(bookings.filter((b) => sameDay(new Date(b.start_at), d))).map((ev) => <EventCard key={ev.b.id} ev={ev} onOpen={onOpen} />)}
+              {layoutDay(bookings.filter((b) => sameDay(toSalon(b.start_at), d))).map((ev) => <EventCard key={ev.b.id} ev={ev} onOpen={onOpen} />)}
               {sameDay(d, now) && nowVisible && (
                 <div style={{ top: nowTop }} className="pointer-events-none absolute inset-x-0 z-10 flex items-center" aria-label="Current time">
                   <span className="-ml-1.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-link" /><span className="h-px flex-1 bg-link" />
@@ -126,7 +128,7 @@ function MonthGrid({ date, bookings, now, onPickDay }) {
         </div>
         <div className="grid grid-cols-7">
           {cells.map((d) => {
-            const items = bookings.filter((b) => sameDay(new Date(b.start_at), d) && b.status !== "cancelled");
+            const items = bookings.filter((b) => sameDay(toSalon(b.start_at), d) && b.status !== "cancelled");
             const inMonth = d.getMonth() === first.getMonth();
             return (
               <button key={d.toISOString()} onClick={() => onPickDay(d)} className={`min-h-[104px] border-b border-r border-border p-1.5 text-left align-top hover:bg-surface-2 ${inMonth ? "" : "bg-surface-2/50"}`}>
@@ -196,7 +198,7 @@ function NewBookings({ rows, sort, setSort, onAccept, onReject, onReschedule, on
               </div>
               <div className="text-right"><div className="text-[11px] text-ink-muted">Price</div><div className="text-sm font-semibold text-ink-primary">{money(b.service.price)}</div></div>
             </div>
-            <div className="mt-2 rounded-lg bg-surface-2 px-3 py-2 text-xs"><span className="text-ink-muted">Service </span><span className="font-medium text-ink-primary">{b.service.name}</span> <span className="text-ink-muted">· {b.service.duration_min} min</span></div>
+            <div className="mt-2 rounded-lg bg-surface-2 px-3 py-2 text-xs"><span className="text-ink-muted">{b.services.length > 1 ? `${b.services.length} services ` : "Service "}</span><span className="font-medium text-ink-primary">{b.service.name}</span> <span className="text-ink-muted">· {b.service.duration_min} min</span></div>
             {b.notes && <p className="mt-2 truncate text-xs text-ink-muted" title={b.notes}>“{b.notes}”</p>}
             <div className="mt-3 grid grid-cols-3 gap-2">
               <Button size="sm" variant="secondary" onClick={() => onReschedule(b)}>New time</Button>
@@ -212,13 +214,13 @@ function NewBookings({ rows, sort, setSort, onAccept, onReject, onReschedule, on
 }
 
 function RescheduleModal({ booking, staff, onClose, onSaved }) {
-  const [start, setStart] = useState(toLocalInput(new Date(booking.start_at)));
+  const [start, setStart] = useState(toLocalInput(toSalon(booking.start_at)));
   const [stylist, setStylist] = useState(booking.staff_id || "");
   const [error, setError] = useState("");
   const submit = async (e) => {
     e.preventDefault(); setError("");
     try {
-      const { data } = await api.patch(`/bookings/${booking.id}`, { start_at: new Date(start).toISOString(), staff_id: stylist || null, status: booking.status === "pending" ? "booked" : booking.status });
+      const { data } = await api.patch(`/bookings/${booking.id}`, { start_at: fromSalon(new Date(start)).toISOString(), staff_id: stylist || null, status: booking.status === "pending" ? "booked" : booking.status });
       onSaved(data);
     } catch (err) { setError(errMsg(err)); }
   };
@@ -237,11 +239,12 @@ function RescheduleModal({ booking, staff, onClose, onSaved }) {
 
 export default function CalendarPage() {
   const { user } = useAuth();
+  const [confirm, confirmDialog] = useConfirm();
   const navigate = useNavigate();
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => toSalon(new Date()));
   const [view, setView] = useState("weekly"); // daily | weekly | monthly
   const [mode, setMode] = useState("calendar"); // calendar | list
-  const [date, setDate] = useState(() => startOfDay(new Date()));
+  const [date, setDate] = useState(() => startOfDay(toSalon(new Date())));
   const [bookings, setBookings] = useState([]);
   const [pending, setPending] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -251,7 +254,7 @@ export default function CalendarPage() {
   const [rescheduling, setRescheduling] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setNow(toSalon(new Date())), 60000); return () => clearInterval(t); }, []);
 
   const range = useMemo(() => {
     if (view === "daily") return [startOfDay(date), addDays(startOfDay(date), 1)];
@@ -260,7 +263,7 @@ export default function CalendarPage() {
   }, [view, date]);
 
   const load = useCallback(() => {
-    api.get("/bookings", { params: { from: range[0].toISOString(), to: range[1].toISOString() } }).then((r) => setBookings(r.data)).catch((e) => setError(errMsg(e)));
+    api.get("/bookings", { params: { from: fromSalon(range[0]).toISOString(), to: fromSalon(range[1]).toISOString() } }).then((r) => setBookings(r.data)).catch((e) => setError(errMsg(e)));
     api.get("/bookings", { params: { status: "pending" } }).then((r) => setPending(r.data)).catch(() => {});
   }, [range]);
   useEffect(() => { load(); }, [load]);
@@ -277,7 +280,13 @@ export default function CalendarPage() {
     try { const { data } = await api.patch(`/bookings/${b.id}`, body); load(); if (done) done(data); } catch (e) { setError(errMsg(e)); }
   };
   const accept = (b) => patch(b, { status: "booked" });
-  const reject = (b) => { if (window.confirm(`Reject the request from ${b.customer.name}?`)) patch(b, { status: "cancelled" }); };
+  const reject = async (b) => {
+    const ok = await confirm({
+      title: "Reject this request?", danger: true, confirmLabel: "Reject request", cancelLabel: "Keep request",
+      message: `${b.customer.name}'s request for ${b.service.name} on ${fmtDateTime(b.start_at)} will be cancelled and they will be notified.`,
+    });
+    if (ok) patch(b, { status: "cancelled" });
+  };
 
   const listRows = statusFilter === "pending" && mode === "list" ? pending : visible;
   const label = view === "daily" ? date.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : date.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
@@ -297,7 +306,7 @@ export default function CalendarPage() {
                   <button onClick={() => step(-1)} aria-label="Previous" className="rounded p-1 hover:bg-surface-3"><ChevronLeft size={16} /></button>
                   <span className="min-w-[110px] text-center font-medium text-ink-primary">{label}</span>
                   <button onClick={() => step(1)} aria-label="Next" className="rounded p-1 hover:bg-surface-3"><ChevronRight size={16} /></button>
-                  <button onClick={() => setDate(startOfDay(new Date()))} className="ml-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-3">Today</button>
+                  <button onClick={() => setDate(startOfDay(toSalon(new Date())))} className="ml-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-3">Today</button>
                 </div>
               </div>
               <div className="flex rounded-xl border border-border p-0.5 text-[13px]">
@@ -348,7 +357,7 @@ export default function CalendarPage() {
       {selected && (
         <Modal title="Booking details" onClose={() => setSelected(null)}>
           <dl className="space-y-2 text-sm">
-            {[["Client", `${selected.customer.name}${selected.customer.phone ? ` · ${selected.customer.phone}` : ""}`], ["Service", `${selected.service.name} · ${money(selected.service.price)}`],
+            {[["Client", `${selected.customer.name}${selected.customer.phone ? ` · ${selected.customer.phone}` : ""}`], ["Service", selected.services.length > 1 ? <ul className="space-y-0.5">{selected.services.map((x, i) => <li key={i}>{x.name} · {money(x.price)} <span className="text-ink-muted">({x.duration_min} min)</span></li>)}<li className="border-t border-border pt-0.5 font-semibold">Total · {money(selected.service.price)} ({selected.service.duration_min} min)</li></ul> : `${selected.service.name} · ${money(selected.service.price)}`],
               ["When", fmtDateTime(selected.start_at)], ["Stylist", selected.staff?.name || "Unassigned"], ["Notes", selected.notes || "-"]].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4"><dt className="text-ink-muted">{k}</dt><dd className="text-right text-ink-primary">{v}</dd></div>
             ))}
@@ -362,13 +371,14 @@ export default function CalendarPage() {
             {selected.status === "pending" && <Button size="sm" onClick={() => patch(selected, { status: "booked" }, setSelected)}>Accept <Check size={13} /></Button>}
             {selected.status === "booked" && <>
               <Button size="sm" variant="secondary" onClick={() => patch(selected, { status: "no_show" }, setSelected)}>No-show</Button>
-              {user.role === "admin"
+              {isAdminRole(user.role)
                 ? <Button size="sm" onClick={() => navigate(`/salon/billing?booking=${selected.id}`)}>Complete &amp; bill</Button>
                 : <Button size="sm" onClick={() => patch(selected, { status: "completed" }, setSelected)}>Mark completed</Button>}
             </>}
           </div>
         </Modal>
       )}
+      {confirmDialog}
       {rescheduling && <RescheduleModal booking={rescheduling} staff={staff} onClose={() => setRescheduling(null)} onSaved={() => { setRescheduling(null); load(); }} />}
     </>
   );
