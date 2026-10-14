@@ -3,7 +3,7 @@ import { supabase, unwrap } from "../supabase.js";
 import { requireAuth, requireRole, wrap, STAFF_ROLES } from "../middleware.js";
 import { invoicePdf } from "../lib/pdf.js";
 import { makeInvoiceCode } from "../lib/shortlink.js";
-import { mailEnabled, notifyInvoice, sendMailStrict } from "../lib/mailer.js";
+import { invoiceEmail, mailEnabled, notifyInvoice, sendMailStrict } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -72,11 +72,7 @@ router.post("/:id/email", requireRole(...STAFF_ROLES), wrap(async (req, res) => 
   const to = req.body.to || inv.customer?.email;
   if (!to) return res.status(400).json({ error: "This customer has no email address" });
   if (!(await mailEnabled())) return res.status(400).json({ error: "Email sending is switched off. An admin can turn it on under Settings > Email." });
-  await sendMailStrict({
-    to, subject: `Your invoice ${inv.invoice_no} - The Grooming Master`,
-    text: `Hi ${inv.customer?.name || ""},\n\nThank you for visiting The Grooming Master. Your invoice ${inv.invoice_no} (total Rs. ${inv.total}) is attached.\n`,
-    attachments: [{ filename: `${inv.invoice_no}.pdf`, content: await invoicePdf(inv, inv.customer) }],
-  });
+  await sendMailStrict(await invoiceEmail(inv, to));
   res.json({ ok: true, sent_to: to });
 }));
 

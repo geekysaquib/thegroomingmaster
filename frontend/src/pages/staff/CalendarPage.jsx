@@ -13,7 +13,7 @@ import { Button, DataTable, EmptyState, ErrorNote, Field, Input, Modal, Select }
 // "New booking" request panel (online requests wait here until the salon accepts them).
 
 const STATUS = { pending: "Pending", booked: "Confirmed", completed: "Completed", no_show: "No-show", cancelled: "Cancelled" };
-const START_H = 9, END_H = 21, ROW = 64; // visible hours and px per hour
+const START_H = 9, END_H = 21, ROW = 80; // visible hours and px per hour (20 px per 15-minute line)
 const HOURS = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
 const WEEKDAYS_SUN = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -58,19 +58,26 @@ export function layoutDay(items) {
 function EventCard({ ev, onOpen }) {
   const { b, s, e, col, n } = ev;
   const start = new Date(s), end = new Date(e);
-  const top = (start.getHours() + start.getMinutes() / 60 - START_H) * ROW;
-  const height = Math.max(((end - start) / 3600000) * ROW - 3, 34);
+  const top = (start.getHours() + start.getMinutes() / 60 - START_H) * ROW; // exact: the card spans precisely its start..end on the grid
+  const height = Math.max(((end - start) / 3600000) * ROW - 2, 18);
+  const compact = height < 38; // too short for two lines: client and service share one line
+  const cancelled = b.status === "cancelled";
   return (
-    <button onClick={() => onOpen(b)} title={`${b.customer.name} - ${b.service.name}`}
-      style={{ ...tint(b.status), top, height, left: `calc(${(col / n) * 100}% + 2px)`, width: `calc(${100 / n}% - 4px)` }}
-      className={`absolute overflow-hidden rounded-xl p-2 text-left text-[11px] leading-tight text-ink-primary shadow-sm transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-muted ${b.status === "cancelled" ? "opacity-70" : ""}`}>
-      <div className={`truncate font-semibold ${b.status === "cancelled" ? "line-through" : ""}`}>Client: {b.customer.name}</div>
-      <div className="mt-0.5 truncate text-ink-secondary">{b.service.name}</div>
-      {height > 56 && <StatusPill status={b.status} className="mt-1.5" />}
-      {height > 88 && (
-        <div className="absolute inset-x-2 bottom-2 flex items-center justify-between">
-          {b.staff ? <Avatar user={b.staff} size={20} className="ring-2 ring-white/70" /> : <span className="text-[10px] text-ink-muted">Any stylist</span>}
-          <span className="rounded-md bg-surface-1/80 px-1.5 py-0.5 text-[10px] font-semibold text-ink-primary">{money(b.service.price)}</span>
+    <button onClick={() => onOpen(b)} title={`${b.customer.name} - ${b.service.name} (${fmtTime(b.start_at)} - ${fmtTime(b.end_at)})${b.staff ? ` - ${b.staff.name}` : ""}`}
+      style={{ ...tint(b.status), top: top + 1, height, left: `calc(${(col / n) * 100}% + 2px)`, width: `calc(${100 / n}% - 4px)` }}
+      className={`absolute overflow-hidden rounded-lg text-left text-[11px] leading-tight text-ink-primary shadow-sm transition-shadow hover:z-10 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-muted ${compact ? "px-2 py-0.5" : "p-2"} ${cancelled ? "opacity-70" : ""}`}>
+      <div className="flex items-center gap-1">
+        <div className={`min-w-0 flex-1 truncate font-semibold ${cancelled ? "line-through" : ""}`}>
+          {b.customer.name}{compact && <span className="font-normal text-ink-secondary"> · {b.service.name}</span>}
+        </div>
+        {b.staff && <Avatar user={b.staff} size={compact ? 14 : 18} className="ring-1 ring-white/70" />}
+      </div>
+      {!compact && <div className="mt-0.5 truncate text-ink-secondary">{b.service.name}</div>}
+      {height > 62 && <StatusPill status={b.status} className="mt-1.5" />}
+      {height > 92 && (
+        <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1">
+          <span className="truncate text-[10px] text-ink-muted">{b.staff ? b.staff.name : "Any stylist"}</span>
+          <span className="shrink-0 rounded-md bg-surface-1/80 px-1.5 py-0.5 text-[10px] font-semibold text-ink-primary">{money(b.service.price)}</span>
         </div>
       )}
     </button>
@@ -101,7 +108,14 @@ function TimeGrid({ days, bookings, now, onOpen, onPickDay, selected }) {
           <div>{HOURS.map((h) => <div key={h} style={{ height: ROW }} className="pr-3 text-right text-[11px] text-ink-muted">{hourLabel(h)}</div>)}</div>
           {days.map((d) => (
             <div key={d.toISOString()} className="relative border-l border-border">
-              {HOURS.map((h) => <div key={h} style={{ height: ROW }} className="border-b border-border/60" />)}
+              {HOURS.map((h) => (
+                <div key={h} style={{ height: ROW }} className="relative border-b border-border/70">
+                  {/* 15-minute guide lines (the half hour is a touch stronger) */}
+                  <span aria-hidden="true" className="absolute inset-x-0 top-1/4 border-t border-dashed border-border/40" />
+                  <span aria-hidden="true" className="absolute inset-x-0 top-1/2 border-t border-dashed border-border/70" />
+                  <span aria-hidden="true" className="absolute inset-x-0 top-3/4 border-t border-dashed border-border/40" />
+                </div>
+              ))}
               {layoutDay(bookings.filter((b) => sameDay(toSalon(b.start_at), d))).map((ev) => <EventCard key={ev.b.id} ev={ev} onOpen={onOpen} />)}
               {sameDay(d, now) && nowVisible && (
                 <div style={{ top: nowTop }} className="pointer-events-none absolute inset-x-0 z-10 flex items-center" aria-label="Current time">

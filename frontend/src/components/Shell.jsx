@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Bug, CalendarDays, CalendarPlus, ChevronsLeft, ChevronsRight, ListChecks, LogOut, Menu, Moon, Receipt, Scissors, Settings, Sun, UserCog, Users, Wallet } from "lucide-react";
+import { BarChart3, Bug, CalendarDays, CalendarPlus, ChevronsLeft, ChevronsRight, ListChecks, LogOut, Menu, Moon, QrCode, Receipt, Scissors, Settings, Sun, UserCog, Users, Wallet } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useThemeMode } from "../lib/theme";
 import Logo from "./Logo";
@@ -39,6 +39,7 @@ const NAV = {
       { to: "/salon/salaries", label: "Salaries", icon: Wallet },
     ] },
     { id: "team", label: "Team", icon: UserCog, items: [{ to: "/salon/team", label: "Team", icon: UserCog }] },
+    { id: "scan", label: "Scan to Book", icon: QrCode, items: [{ to: "/salon/scan-qr", label: "Scan to Book QR", icon: QrCode }] },
     { id: "settings", label: "Settings", icon: Settings, items: [{ to: "/salon/settings", label: "Salon & Email", icon: Settings }] },
   ],
 };

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Copy, ExternalLink, Mail, Save, Send } from "lucide-react";
+import { Copy, Download, ExternalLink, Mail, Printer, QrCode, Save, Send } from "lucide-react";
 import { api, errMsg } from "../../lib/api";
-import { Badge, Button, ErrorNote, Field, Input, PageTitle, Panel, Select } from "../../components/ui";
+import { Badge, Button, ErrorNote, Field, Input, Modal, PageTitle, Panel, Select } from "../../components/ui";
+import { printSheet } from "../../components/Documents";
+import { ScanPoster, qrPng, useQrSvg } from "../../components/ScanPoster";
 
 const Ok = ({ children }) => children ? <div role="status" className="mb-3 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">{children}</div> : null;
 
@@ -63,6 +65,48 @@ function HoursPanel() {
         <p className="text-xs text-ink-muted">Customers can book any slot between opening and closing time on that day ({form.timezone}); closed days can't be booked. The number of bookings at a slot never limits availability.</p>
         <Button type="submit"><Save size={14} /> Save hours</Button>
       </form>
+    </Panel>
+  );
+}
+
+/** "Scan to book": the public booking page (/scan) behind a QR code the salon can print and put on the counter. */
+export function ScanPanel() {
+  const url = `${window.location.origin}/scan/booking`; // what the QR code opens: the booking form
+  const svg = useQrSvg(url);
+  const [poster, setPoster] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { window.prompt("Copy this link", url); } };
+  const download = async () => { const a = document.createElement("a"); a.href = await qrPng(url); a.download = "grooming-master-scan-to-book.png"; a.click(); };
+
+  return (
+    <Panel title="Scan to book" actions={<Badge tone="success">Live</Badge>}>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+        <div className="relative mx-auto h-44 w-44 shrink-0 bg-[#fffdf8] p-3 shadow-sm ring-1 ring-border sm:mx-0">
+          {svg ? <div className="h-full w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} /> : <div className="h-full w-full animate-pulse bg-surface-3" />}
+          <span className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#fffdf8] ring-1 ring-[#d4a73c]"><img src="/images/brand/crest.png" alt="" className="h-8 w-6 object-contain" /></span>
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <p className="text-sm text-ink-secondary">Customers scan this code and the booking form opens: choose services and a time, add their details (existing customers are recognised, new ones are registered on the spot) and send a request - two short steps, no login. Requests appear in your calendar as <b>pending</b> for you to accept.</p>
+          <div className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm"><QrCode size={15} className="shrink-0 text-ink-muted" /><span className="min-w-0 flex-1 truncate font-mono text-xs">{url}</span></div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => setPoster(true)}><Printer size={14} /> Print A4 poster</Button>
+            <Button type="button" variant="secondary" onClick={download}><Download size={14} /> Download QR (PNG)</Button>
+            <Button type="button" variant="secondary" onClick={copy}><Copy size={14} /> {copied ? "Copied!" : "Copy link"}</Button>
+            <a href="/scan" target="_blank" rel="noreferrer"><Button type="button" variant="secondary"><ExternalLink size={14} /> Show QR screen</Button></a>
+            <a href="/scan/booking" target="_blank" rel="noreferrer"><Button type="button" variant="secondary"><ExternalLink size={14} /> Open booking form</Button></a>
+          </div>
+        </div>
+      </div>
+      {poster && (
+        <Modal title="Scan to book - A4 poster" onClose={() => setPoster(false)} wide="a4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-ink-muted">Print on A4 (or "Save as PDF"). Tip: set Margins to "None" and tick "Background graphics" if your browser asks.</p>
+            <Button size="sm" onClick={printSheet}><Printer size={14} /> Print poster</Button>
+          </div>
+          <div className="max-h-[72vh] overflow-y-auto rounded-md bg-surface-2 p-3 sm:p-4"><ScanPoster url={url} /></div>
+        </Modal>
+      )}
     </Panel>
   );
 }

@@ -12,6 +12,7 @@ import analytics from "./routes/analytics.js";
 import contact from "./routes/contact.js";
 import settings from "./routes/settings.js";
 import dev from "./routes/dev.js";
+import publicRoutes from "./routes/public.js";
 import { activityLogger } from "./lib/activity.js";
 import { errorHandler, wrap } from "./middleware.js";
 import { supabase, unwrap } from "./supabase.js";
@@ -37,6 +38,7 @@ app.use("/api/analytics", analytics);
 app.use("/api/contact", contact);
 app.use("/api/settings", settings);
 app.use("/api/dev", dev);
+app.use("/api/public", publicRoutes);
 
 // Public short link to an invoice PDF, shared on WhatsApp: /i/<code>. Signed + expiring, no login needed.
 app.get("/i/:code", wrap(async (req, res) => {

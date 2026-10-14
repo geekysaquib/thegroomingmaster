@@ -5,7 +5,9 @@ import GlobalLoader from "./components/GlobalLoader";
 import { Spinner } from "./components/ui";
 import Landing from "./pages/Landing";
 import Contact from "./pages/Contact";
-import { CustomerLogin, StaffLogin, Register } from "./pages/AuthPages";
+import ScanBook from "./pages/ScanBook";
+import ScanQrScreen from "./pages/ScanQrScreen";
+import { CustomerLogin, StaffLogin, Register, ForgotPassword, ResetPassword } from "./pages/AuthPages";
 import BookAppointment from "./pages/customer/BookAppointment";
 import MyBookings from "./pages/customer/MyBookings";
 import Dashboard from "./pages/staff/Dashboard";
@@ -14,6 +16,7 @@ import NewBooking from "./pages/staff/NewBooking";
 import Customers from "./pages/staff/Customers";
 import Services from "./pages/staff/Services";
 import Settings from "./pages/staff/Settings";
+import ScanQr from "./pages/staff/ScanQr";
 import Developer from "./pages/staff/Developer";
 import Billing from "./pages/staff/Billing";
 import Salaries from "./pages/staff/Salaries";
@@ -37,9 +40,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/scan" element={<ScanQrScreen />} />
+          <Route path="/scan/booking" element={<ScanBook />} />
           <Route path="/login" element={<CustomerLogin />} />
           <Route path="/register" element={<Register />} />
           <Route path="/salon-login" element={<StaffLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/app" element={<Guard allow="customer"><Shell /></Guard>}>
             <Route index element={<Navigate to="book" replace />} />
@@ -58,6 +65,7 @@ export default function App() {
             <Route path="billing" element={<Guard allow="admin"><Billing /></Guard>} />
             <Route path="team" element={<Guard allow="admin"><Team /></Guard>} />
             <Route path="settings" element={<Guard allow="admin"><Settings /></Guard>} />
+            <Route path="scan-qr" element={<Guard allow="admin"><ScanQr /></Guard>} />
             <Route path="developer" element={<Guard allow="developer"><Developer /></Guard>} />
           </Route>
 

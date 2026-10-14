@@ -1,7 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase, unwrap } from "../supabase.js";
+import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import { signToken, requireAuth, wrap } from "../middleware.js";
+import { sendPasswordChanged, sendPasswordReset } from "../lib/mailer.js";
+import { siteUrl } from "../lib/emailTemplates.js";
 
 const router = Router();
 const PUBLIC_FIELDS = "id, name, email, phone, gender, role, avatar";
@@ -59,6 +63,49 @@ router.post("/login", wrap(async (req, res) => {
 
   const { password_hash, base_salary, commission_pct, ...safe } = user;
   res.json({ token: signToken(user), user: safe });
+}));
+
+// ---------- forgot / reset password (email link) ----------
+// The link carries a signed token (1 hour) that also fingerprints the current password hash, so it stops working the moment the
+// password changes: single use, no database table needed. Responses never reveal whether an email has an account.
+const fingerprint = (hash) => crypto.createHash("sha256").update(hash || "none").digest("hex").slice(0, 16);
+const signReset = (u) => jwt.sign({ id: u.id, p: "pwd-reset", f: fingerprint(u.password_hash) }, process.env.JWT_SECRET, { expiresIn: "1h" });
+async function userFromResetToken(token) {
+  let c;
+  try { c = jwt.verify(String(token || ""), process.env.JWT_SECRET); } catch { return null; }
+  if (c.p !== "pwd-reset") return null;
+  const rows = unwrap(await supabase.from("users").select("id, name, email, role, password_hash, active").eq("id", c.id));
+  const u = rows[0];
+  return u && u.active && fingerprint(u.password_hash) === c.f ? u : null;
+}
+// Small in-memory throttle (per warm server instance): 5 requests / hour per email, 20 / hour per IP.
+const asked = new Map();
+const throttled = (key, max) => { const now = Date.now(); const hits = (asked.get(key) || []).filter((t) => now - t < 3600_000); asked.set(key, [...hits, now]); return hits.length >= max; };
+
+router.post("/forgot", wrap(async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "Please enter a valid email address." });
+  if (throttled(`e:${email}`, 5) || throttled(`i:${req.ip}`, 20)) return res.status(429).json({ error: "Too many requests - please try again in an hour." });
+  const rows = unwrap(await supabase.from("users").select("id, name, email, role, password_hash, active").eq("email", email));
+  const user = rows[0];
+  if (user?.active) await sendPasswordReset(user, `${siteUrl()}/reset-password?token=${encodeURIComponent(signReset(user))}`);
+  res.json({ ok: true });
+}));
+
+router.get("/reset/check", wrap(async (req, res) => {
+  const u = await userFromResetToken(req.query.token);
+  res.json(u ? { valid: true, name: u.name, audience: u.role === "customer" ? "customer" : "staff" } : { valid: false });
+}));
+
+router.post("/reset", wrap(async (req, res) => {
+  const { token, password } = req.body;
+  if (typeof password !== "string" || password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+  if (password.length > 200) return res.status(400).json({ error: "Password is too long" });
+  const u = await userFromResetToken(token);
+  if (!u) return res.status(400).json({ error: "This link has expired or was already used. Please request a new one." });
+  unwrap(await supabase.from("users").update({ password_hash: await bcrypt.hash(password, 10) }).eq("id", u.id));
+  await sendPasswordChanged(u);
+  res.json({ ok: true, audience: u.role === "customer" ? "customer" : "staff" });
 }));
 
 router.get("/me", requireAuth, wrap(async (req, res) => {

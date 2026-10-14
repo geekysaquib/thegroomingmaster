@@ -168,6 +168,10 @@
 .theme-lux .ornament { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--gold-3); }
 .theme-lux .ornament::before, .theme-lux .ornament::after { content: ""; height: 1px; width: 64px; background: linear-gradient(90deg, transparent, var(--gold-2)); }
 .theme-lux .ornament::after { transform: scaleX(-1); }
+/* /scan: a soft gold band sweeping down the QR plate */
+@keyframes gm-scan { 0% { top: -2.5rem; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+.gm-scan-sweep { animation: gm-scan 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .gm-scan-sweep { animation: none; display: none; } }
 @keyframes lux-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes lux-kenburns { from { transform: scale(1.04); } to { transform: scale(1.14) translate(-1.5%, -1%); } }
 @keyframes lux-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }

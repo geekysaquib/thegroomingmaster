@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { MailCheck, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useAuth } from "../lib/auth";
-import { errMsg } from "../lib/api";
+import { api, errMsg } from "../lib/api";
 import Logo from "../components/Logo";
 import { ThemeToggle } from "../lib/theme";
 import { SALON } from "../lib/format";
@@ -100,6 +101,7 @@ function LoginForm({ audience }) {
       <ErrorNote>{error}</ErrorNote>
       <Field label="Email"><Input type="email" required autoFocus autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
       <Field label="Password"><Input type="password" required autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
+      <div className="text-right"><Link to={`/forgot-password?for=${audience}`} className="text-xs font-medium text-link underline-offset-2 hover:underline">Forgot password?</Link></div>
       <Button type="submit" disabled={busy} className={`w-full ${GOLD_BTN}`}>{busy ? "Signing in…" : "Sign in"}</Button>
     </form>
   );
@@ -118,6 +120,101 @@ export const StaffLogin = () => (
     <LoginForm audience="staff" />
   </AuthCard>
 );
+
+/** Step 1: ask for the account email; the server emails a reset link (it never says whether the address has an account). */
+export function ForgotPassword() {
+  const [params] = useSearchParams();
+  const back = params.get("for") === "staff" ? "/salon-login" : "/login";
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault(); setError(""); setBusy(true);
+    try { await api.post("/auth/forgot", { email }); setSent(true); }
+    catch (err) { setError(errMsg(err)); } finally { setBusy(false); }
+  };
+
+  return (
+    <AuthCard title="Forgot password" subtitle="Enter your account email and we will send you a link to choose a new password."
+      footer={<Link to={back} className="font-medium text-link underline-offset-2 hover:underline">Back to sign in</Link>}>
+      {sent ? (
+        <div role="status" className="rounded-md border border-border bg-surface-1 p-5 text-center">
+          <MailCheck className="mx-auto text-success" size={34} />
+          <h2 className="mt-3 text-base font-semibold">Check your email</h2>
+          <p className="mt-1.5 text-sm text-ink-secondary">If an account exists for <b className="break-all">{email}</b>, we have sent a reset link. It works for 1 hour. Please also look in your spam folder.</p>
+          <Button variant="secondary" className="mt-4" onClick={() => setSent(false)}>Use a different email</Button>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-3">
+          <ErrorNote>{error}</ErrorNote>
+          <Field label="Email"><Input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+          <Button type="submit" disabled={busy} className={`w-full ${GOLD_BTN}`}>{busy ? "Sending…" : "Email me a reset link"}</Button>
+        </form>
+      )}
+    </AuthCard>
+  );
+}
+
+/** Step 2: the emailed link lands here (/reset-password?token=...). */
+export function ResetPassword() {
+  const [params] = useSearchParams();
+  const token = params.get("token") || "";
+  const [state, setState] = useState({ status: token ? "checking" : "invalid" }); // checking | valid | invalid | done
+  const [form, setForm] = useState({ password: "", confirm: "" });
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    let live = true;
+    api.get("/auth/reset/check", { params: { token } })
+      .then((r) => live && setState(r.data.valid ? { status: "valid", name: r.data.name, audience: r.data.audience } : { status: "invalid" }))
+      .catch(() => live && setState({ status: "invalid" }));
+    return () => { live = false; };
+  }, [token]);
+
+  const submit = async (e) => {
+    e.preventDefault(); setError("");
+    if (form.password !== form.confirm) { setError("The two passwords do not match."); return; }
+    setBusy(true);
+    try { const { data } = await api.post("/auth/reset", { token, password: form.password }); setState({ status: "done", audience: data.audience }); }
+    catch (err) { setError(errMsg(err)); } finally { setBusy(false); }
+  };
+
+  const login = state.audience === "staff" ? "/salon-login" : "/login";
+  return (
+    <AuthCard title="Choose a new password" subtitle={state.status === "valid" ? `Hi ${String(state.name || "").split(" ")[0]}, enter a new password for your account.` : "Set a new password for your account."}
+      footer={<Link to="/login" className="font-medium text-link underline-offset-2 hover:underline">Back to sign in</Link>}>
+      {state.status === "checking" && <p className="text-sm text-ink-secondary">Checking your link…</p>}
+      {state.status === "invalid" && (
+        <div role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-5 text-center">
+          <ShieldAlert className="mx-auto text-danger" size={32} />
+          <h2 className="mt-3 text-base font-semibold">This link is not valid</h2>
+          <p className="mt-1.5 text-sm text-ink-secondary">It may have expired (links last 1 hour) or already been used. Please request a new one.</p>
+          <Link to="/forgot-password"><Button className="mt-4">Request a new link</Button></Link>
+        </div>
+      )}
+      {state.status === "valid" && (
+        <form onSubmit={submit} className="space-y-3">
+          <ErrorNote>{error}</ErrorNote>
+          <Field label="New password" hint="At least 8 characters"><Input type="password" required minLength={8} autoFocus autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
+          <Field label="Confirm new password"><Input type="password" required minLength={8} autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></Field>
+          <Button type="submit" disabled={busy} className={`w-full ${GOLD_BTN}`}>{busy ? "Saving…" : "Save new password"}</Button>
+        </form>
+      )}
+      {state.status === "done" && (
+        <div role="status" className="rounded-md border border-border bg-surface-1 p-5 text-center">
+          <ShieldCheck className="mx-auto text-success" size={34} />
+          <h2 className="mt-3 text-base font-semibold">Password updated</h2>
+          <p className="mt-1.5 text-sm text-ink-secondary">You can now sign in with your new password.</p>
+          <Link to={login}><Button className={`mt-4 ${GOLD_BTN}`}>Sign in</Button></Link>
+        </div>
+      )}
+    </AuthCard>
+  );
+}
 
 export function Register() {
   const { user, register } = useAuth();

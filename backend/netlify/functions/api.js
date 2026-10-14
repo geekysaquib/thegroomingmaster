@@ -2,7 +2,10 @@ import serverless from "serverless-http";
 import app from "../../src/app.js";
 
 // Netlify rewrites /api/* to /.netlify/functions/api/api/*; strip the function prefix so Express sees /api/*.
-const expressHandler = serverless(app, { basePath: "/.netlify/functions/api" });
+// Binary responses (invoice / salary PDFs) must be base64-encoded by the adapter, otherwise Netlify sends them as UTF-8 text and
+// every byte >= 0x80 is corrupted (the PDF opens as a blank page).
+const isBinary = (headers) => /^(application\/pdf|application\/octet-stream|image\/)/i.test(String(headers["content-type"] || ""));
+const expressHandler = serverless(app, { basePath: "/.netlify/functions/api", binary: isBinary });
 
 const REQUIRED = ["JWT_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"];
 const missing = REQUIRED.filter((k) => !process.env[k]);

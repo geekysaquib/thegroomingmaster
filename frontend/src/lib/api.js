@@ -10,6 +10,9 @@ export const tokenStore = {
 
 export const api = axios.create({ baseURL: "/api" });
 
+/** For public pages (e.g. /scan): never sends a login token and never touches the session, so a stale or missing login can't affect it. */
+export const publicApi = axios.create({ baseURL: "/api" });
+
 // Number of API calls currently in flight; the global loader subscribes to it.
 let pending = 0;
 const listeners = new Set();

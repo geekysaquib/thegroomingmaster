@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { moneyExact, fmtDateTime, SALON } from "../lib/format";
 import { SALON_TZ } from "../lib/salonTime";
 import { rupeesInWords } from "../lib/words";
@@ -19,18 +19,32 @@ export function printSheet() {
 }
 const KEEP = { WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }; // dark band + tints survive printing
 
-function A4Sheet({ children }) {
+export function A4Sheet({ children, fitHeight = false, reserve = 120 }) {
   const wrap = useRef(null), sheet = useRef(null);
   const [fit, setFit] = useState({ scale: 1, height: A4_H });
   useLayoutEffect(() => {
-    const measure = () => { const scale = Math.min(1, wrap.current.clientWidth / A4_W); setFit({ scale, height: sheet.current.offsetHeight * scale }); };
+    const measure = () => {
+      const parent = wrap.current.parentElement, cs = getComputedStyle(parent);
+      const byWidth = (parent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) / A4_W; // usable width inside the parent
+      const byHeight = fitHeight ? (window.innerHeight - reserve) / A4_H : Infinity; // whole sheet visible without scrolling
+      const scale = Math.max(0.2, Math.min(1, byWidth, byHeight));
+      setFit({ scale, height: sheet.current.offsetHeight * scale });
+    };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(wrap.current); ro.observe(sheet.current);
-    return () => ro.disconnect();
+    ro.observe(wrap.current.parentElement); ro.observe(sheet.current);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [fitHeight, reserve]);
+  // While an A4 sheet is on screen, the browser prints on A4 with no margins even for a plain Ctrl+P (not only our Print buttons).
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = "@page { size: A4 portrait; margin: 0; }";
+    document.head.appendChild(style);
+    return () => style.remove();
   }, []);
   return (
-    <div ref={wrap} className="mx-auto w-full" style={{ maxWidth: A4_W, height: fit.height }}>
+    <div ref={wrap} className="mx-auto" style={{ width: A4_W * fit.scale, height: fit.height }}>
       <div ref={sheet} className="a4-sheet print-area flex flex-col overflow-hidden bg-[#fffdf8] text-[13px] leading-relaxed text-[#1d1710] shadow-lg"
         style={{ width: A4_W, minHeight: A4_H, transform: `scale(${fit.scale})`, transformOrigin: "top left", fontFamily: '"Inter Tight", Inter, sans-serif', ...KEEP }}>
         {children}

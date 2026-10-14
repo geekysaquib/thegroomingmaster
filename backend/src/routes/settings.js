@@ -2,7 +2,7 @@ import { Router } from "express";
 import { supabase, unwrap } from "../supabase.js";
 import { requireAuth, requireRole, wrap } from "../middleware.js";
 import { DAY_NAMES, getHours, getSetting, setSetting, TIME_RE, toMins } from "../lib/settings.js";
-import { getSmtp, mailEnabled, sendMailStrict } from "../lib/mailer.js";
+import { getSmtp, mailEnabled, sendMailStrict, testEmail } from "../lib/mailer.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -58,7 +58,7 @@ router.post("/smtp/test", requireRole("admin"), wrap(async (req, res) => {
   const to = (req.body.to || me.email || "").trim();
   if (!to) return res.status(400).json({ error: "Enter an address to send the test to" });
   try {
-    await sendMailStrict({ to, subject: "SMTP test - The Grooming Master", text: "Your email settings work. Booking, status, invoice and salary emails will now be delivered." });
+    await sendMailStrict(testEmail(to));
   } catch (e) { return res.status(400).json({ error: `Could not send: ${e.message}` }); }
   res.json({ ok: true, sent_to: to });
 }));

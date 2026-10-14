@@ -7,7 +7,7 @@ import { notifyBookingCreated, notifyBookingChanged } from "../lib/mailer.js";
 const router = Router();
 router.use(requireAuth);
 
-const SELECT = "*, customer:users!bookings_customer_id_fkey(id, name, email, phone, avatar), staff:users!bookings_staff_id_fkey(id, name, email, avatar), service:services(id, name, price, price_type, duration_min, category)";
+export const SELECT = "*, customer:users!bookings_customer_id_fkey(id, name, email, phone, avatar), staff:users!bookings_staff_id_fkey(id, name, email, avatar), service:services(id, name, price, price_type, duration_min, category)";
 const ACTIVE = ["pending", "booked"]; // statuses that occupy a stylist's time
 
 /**
